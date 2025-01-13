@@ -104,11 +104,6 @@ public class Drivetrain extends SubsystemBase {
     
     @Override
     public void periodic() {
-        SmartDashboard.putNumber("module 0 cancoder reading", swerveModules[0].getCANCoderRadians());
-        SmartDashboard.putNumber("module 1 cancoder reading", swerveModules[1].getCANCoderRadians());
-        SmartDashboard.putNumber("module 2 cancoder reading", swerveModules[2].getCANCoderRadians());
-        SmartDashboard.putNumber("module 3 cancoder reading", swerveModules[3].getCANCoderRadians());
-
         SmartDashboard.putNumber("module 0 desired velocity", swerveModules[0].getDesiredState().speedMetersPerSecond);
         SmartDashboard.putNumber("module 1 desired velocity", swerveModules[1].getDesiredState().speedMetersPerSecond);
         SmartDashboard.putNumber("module 2 desired velocity", swerveModules[2].getDesiredState().speedMetersPerSecond);
@@ -118,5 +113,15 @@ public class Drivetrain extends SubsystemBase {
         SmartDashboard.putNumber("module 1 actual velocity", swerveModules[1].getActualSpeed());
         SmartDashboard.putNumber("module 2 actual velocity", swerveModules[2].getActualSpeed());
         SmartDashboard.putNumber("module 3 actual velocity", swerveModules[3].getActualSpeed());
+
+        SmartDashboard.putNumber("module 0 desired angle", swerveModules[0].getDesiredState().angle.getRadians());
+        SmartDashboard.putNumber("module 1 desired angle", swerveModules[1].getDesiredState().angle.getRadians());
+        SmartDashboard.putNumber("module 2 desired angle", swerveModules[2].getDesiredState().angle.getRadians());
+        SmartDashboard.putNumber("module 3 desired angle", swerveModules[3].getDesiredState().angle.getRadians());
+
+        SmartDashboard.putNumber("module 0 actual angle", swerveModules[0].getCANCoderRadians());
+        SmartDashboard.putNumber("module 1 actual angle", swerveModules[1].getCANCoderRadians());
+        SmartDashboard.putNumber("module 2 actual angle", swerveModules[2].getCANCoderRadians());
+        SmartDashboard.putNumber("module 3 actual angle", swerveModules[3].getCANCoderRadians());
     }
 }
