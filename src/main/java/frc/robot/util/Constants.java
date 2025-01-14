@@ -56,6 +56,6 @@ public class Constants {
         public static final double kFrontRightCancoderOffset = 3.313392;
         public static final double kBackRightCancoderOffset = -1.992641;
         
-        public static final double kMathFloorSpeed = 3;
+        public static final double kMaxFloorSpeed = 3;
     }
 }
