@@ -15,7 +15,6 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler;
  * project.
  */
 public class Robot extends TimedRobot {
-
   private Shuffleboard shufflboard; 
   private Command m_autonomousCommand;
 
@@ -27,7 +26,7 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void robotInit() {
-    shufflboard = Shufflboard.getInstance();
+    shufflboard = Shuffleboard.getInstance();
     // Instantiate our RobotContainer.  This will perform all our button bindings, and put our
     // autonomous chooser on the dashboard.
     shufflboard.configureAutoChooser(); 
