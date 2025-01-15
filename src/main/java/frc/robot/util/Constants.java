@@ -46,6 +46,22 @@ public class Constants {
             // public static final double kD = 0.0;
             // public static final double kFF = 0.0;
         }
+        public class AutoAlign {
+            public final static double kP = 0.02;
+            public final static double kI = 0;
+            public final static double kD = 0;
+            public final static double kS = 0.5;
+            public final static double kV = 0.12;
+            public final static double kA = 0;
+            public final static double kFF = 0.01;
+            // public static final double kS = 0.05;
+            // public static final double kV = 0.13;
+            // public static final double kA = 0.0;
+            // public static final double kP = 0.11;
+            // public static final double kI = 0.0;
+            // public static final double kD = 0.0;
+            // public static final double kFF = 0.0;
+        }
         
         public static final double kTrackWidth = 2;
         public static final double kWheelBase = 2;

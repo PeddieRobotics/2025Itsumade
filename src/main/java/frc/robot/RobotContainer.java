@@ -5,7 +5,7 @@
 package frc.robot;
 
 import frc.robot.commands.Autos;
-import frc.robot.commands.ExampleCommand;
+import frc.robot.commands.AutoAlignment;
 import frc.robot.commands.SwerveDriveCommand;
 import frc.robot.subsystems.Drivetrain;
 import frc.robot.subsystems.LimelightShooter;
@@ -23,6 +23,7 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
 public class RobotContainer {
   private Drivetrain drivetrain;
   private LimelightShooter limelightShooter;
+  
 
   public RobotContainer() {
     drivetrain = Drivetrain.getInstance();
