@@ -1,0 +1,43 @@
+{
+  "version": "2025.0",
+  "command": {
+    "type": "sequential",
+    "data": {
+      "commands": [
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Bottom to D"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "D to Bottom Lollipop"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Bottom Lollipop to B"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "B to Middle Lollipop"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Middle Lollipop to A"
+          }
+        }
+      ]
+    }
+  },
+  "resetOdom": true,
+  "folder": null,
+  "choreoAuto": false
+}

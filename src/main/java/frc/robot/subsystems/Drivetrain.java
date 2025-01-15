@@ -2,6 +2,8 @@ package frc.robot.subsystems;
 
 import com.ctre.phoenix6.hardware.Pigeon2;
 
+import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
@@ -15,11 +17,15 @@ import frc.robot.util.RobotMap;
 public class Drivetrain extends SubsystemBase {
     private static Drivetrain instance;
     
+    private boolean isParkedAuto; 
+
+    
     private final SwerveModule[] swerveModules;
     private final SwerveModule frontLeft, frontRight, backLeft, backRight;
     
     private SwerveModuleState[] states;
     private SwerveModulePosition[] positions;
+    private SwerveDrivePoseEstimator odometry; 
     
     private final Pigeon2 gyro;
     private double heading;
@@ -30,7 +36,10 @@ public class Drivetrain extends SubsystemBase {
         return instance;
     }
     
+
+
     public Drivetrain() {
+        isParkedAuto = false; 
         frontLeft = new SwerveModule(RobotMap.CANIVORE_NAME, RobotMap.FRONT_LEFT_MODULE_DRIVE_ID,
                     RobotMap.FRONT_LEFT_MODULE_TURN_ID, RobotMap.FRONT_LEFT_MODULE_CANCODER_ID, DriveConstants.kFrontLeftCancoderOffset);
         frontRight = new SwerveModule(RobotMap.CANIVORE_NAME, RobotMap.FRONT_RIGHT_MODULE_DRIVE_ID,
@@ -75,6 +84,36 @@ public class Drivetrain extends SubsystemBase {
         for (int i = 0; i < 4; i++)
             swerveModules[i].setDesiredState(desiredStates[i]);
     }
+
+    public Pose2d getPose(){
+        return odometry.getEstimatedPosition(); 
+    }
+
+    public void resetPose(Pose2d pose) {
+        gyro.reset();
+        odometry.resetPosition(getHeadingAsRotation2d(), positions, pose);
+    }
+
+    public ChassisSpeeds getRobotRelativeSpeeds(){ 
+        return DriveConstants.kinematics.toChassisSpeeds(frontLeft.getState(), frontRight.getState(), backLeft.getState(), backRight.getState()); 
+    }
+
+    public boolean getIsParkedAuto(){
+        return isParkedAuto; 
+    }
+
+    public void driveRobotRelative(ChassisSpeeds robotRelativeSpeeds){
+        if(isParkedAuto){
+            return;
+        }
+        states = DriveConstants.kinematics.toSwerveModuleStates(robotRelativeSpeeds); 
+        setSwerveModuleStates(states);
+    }
+
+    public void setIsParkedAuto(boolean isParked){
+        this.isParkedAuto = isParked; 
+    }
+
     
     // in radians/s
     public void drive(Translation2d translation, double rotation,
