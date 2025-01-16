@@ -10,6 +10,10 @@ import frc.robot.commands.SwerveDriveCommand;
 import frc.robot.subsystems.Drivetrain;
 import frc.robot.subsystems.LimelightShooter;
 import frc.robot.subsystems.SwerveModule;
+import frc.robot.util.OI;
+
+import java.io.ObjectInputFilter.Config;
+
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
@@ -23,10 +27,14 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
 public class RobotContainer {
   private Drivetrain drivetrain;
   private LimelightShooter limelightShooter;
+  private OI oi;
 
   public RobotContainer() {
     drivetrain = Drivetrain.getInstance();
     drivetrain.setDefaultCommand(new SwerveDriveCommand());
+
+    oi = OI.getInstance();
+    // oi.configurate();
     
     limelightShooter = LimelightShooter.getInstance();
   }

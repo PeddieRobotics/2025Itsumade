@@ -21,6 +21,7 @@ public class LimelightShooter extends Limelight {
         SmartDashboard.putNumber("LL Average Distance", getFilteredDistance());
         SmartDashboard.putNumber("LL ty", getTy());
         SmartDashboard.putNumber("LL tx", getTx());
+        SmartDashboard.putNumber("LL tx average", getTxAverage());
         SmartDashboard.putString("LL neural class ID", getNeuralClassID());
 
         // setRedTargetingOffset(SmartDashboard.getNumber("Red Targeting Offset", redTargetOffset));
