@@ -114,7 +114,9 @@ public abstract class Limelight extends SubsystemBase {
             // d = h/tan(a1+a2)
             // return (LimelightConstants.kSpeakerAprilTagHeight - LimelightConstants.kLimelightHeight) /
             //         (Math.tan(Math.toRadians(LimelightConstants.kLimelightPanningAngle + getTy())));
-            return 0;
+            return (30.5 - 17.88) /
+                    (Math.tan(Math.toRadians(25.0 - getTy())));
+            // return 0;
         }
     }
 
