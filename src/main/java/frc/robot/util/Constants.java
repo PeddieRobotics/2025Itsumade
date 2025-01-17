@@ -1,5 +1,8 @@
 package frc.robot.util;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.util.Units;
@@ -86,5 +89,22 @@ public class Constants {
         public static final double kBackRightCancoderOffset = -1.978;
         
         public static final double kMaxFloorSpeed = 5;
+        public static final Map<Double, Double> kReefDesiredAngle = new HashMap<Double, Double>() {{
+            // red side
+            put(6.0, 60.0);
+            put(7.0, 0.0);
+            put(8.0, -60.0);
+            put(9.0, -120.0);
+            put(10.0, 180.0);
+            put(11.0, 120.0);
+
+            // blue side, same angles but opposite
+            put(17.0, -60.0);
+            put(18.0, 0.0);
+            put(19.0, 60.0);
+            put(20.0, 120.0);
+            put(21.0, 180.0);
+            put(22.0, -120.0);
+        }};
     }
 }
