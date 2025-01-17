@@ -65,6 +65,10 @@ public class Drivetrain extends SubsystemBase {
     public Rotation2d getHeadingAsRotation2d() {
         return gyro.getRotation2d();
     }
+
+    public double getDegrees(){
+        return gyro.getRotation2d().getDegrees(); 
+    }
     
     public void updateModulePositions() {
         for (int i = 0; i < 4; i++)
@@ -123,5 +127,8 @@ public class Drivetrain extends SubsystemBase {
         SmartDashboard.putNumber("module 1 actual angle", swerveModules[1].getCANCoderRadians());
         SmartDashboard.putNumber("module 2 actual angle", swerveModules[2].getCANCoderRadians());
         SmartDashboard.putNumber("module 3 actual angle", swerveModules[3].getCANCoderRadians());
+
+        SmartDashboard.putNumber("gyro angle1", getHeading()); 
+        SmartDashboard.putNumber("gyro angle2", getDegrees()); 
     }
 }

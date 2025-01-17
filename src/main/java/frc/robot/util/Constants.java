@@ -80,11 +80,10 @@ public class Constants {
             kSwerveModuleLocations[3]
         );
         
-        public static final double kFrontLeftCancoderOffset = -2.934505247225232;
-        public static final double kBackLeftCancoderOffset = -2.060136;
-
-        public static final double kFrontRightCancoderOffset = 3.313392;
-        public static final double kBackRightCancoderOffset = -1.992641;
+        public static final double kFrontLeftCancoderOffset = -2.896;
+        public static final double kFrontRightCancoderOffset = -3.073;
+        public static final double kBackLeftCancoderOffset = -2.045;
+        public static final double kBackRightCancoderOffset = -1.978;
         
         public static final double kMaxFloorSpeed = 5;
     }
