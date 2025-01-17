@@ -8,6 +8,7 @@ import frc.robot.subsystems.Drivetrain;
 import frc.robot.subsystems.Limelight;
 import frc.robot.subsystems.LimelightShooter;
 import frc.robot.subsystems.SwerveModule;
+import frc.robot.util.Constants;
 import frc.robot.util.OI;
 
 import com.ctre.phoenix6.signals.PIDRefPIDErr_ClosedLoopModeValue;
@@ -27,6 +28,7 @@ public class PhilipAlignmentCommand extends Command {
   private PIDController pidController;
   private double threshold;
   private double P, I, D, FF;
+  private double a1, a2;
 
   /**
    * Creates a new ExampleCommand.
@@ -58,7 +60,13 @@ public class PhilipAlignmentCommand extends Command {
   @Override
   public void initialize() {
     oi = OI.getInstance();
+
+    int desiredTarget = (int) limelightShooter.getTargetID();
+    double desiredAngle = Constants.kReefDesiredAngle.get(desiredTarget);
+    a1 = Math.cos(Math.toRadians(desiredAngle));
+    a2 = Math.sin(Math.toRadians(desiredAngle));
   }
+
 
   // Called every time the scheduler runs while the command is scheduled.
   @Override
@@ -88,8 +96,15 @@ public class PhilipAlignmentCommand extends Command {
     }
 
     double rotation = oi.getRotation();
-    double forward = oi.getForward();
-    drivetrain.drive(new Translation2d(forward, -translation), rotation, false, null);
+    
+    double b1 = oi.getStrafe();
+    double b2 = oi.getForward();
+
+    // a = (a1, a2) b = (b1, b2)
+    double forBackTranslation = a1*b1 + a2*b2;
+    
+    drivetrain.drive(new Translation2d(forBackTranslation, -translation), rotation, false, null);
+
   }
 
   // Called once the command ends or is interrupted.
