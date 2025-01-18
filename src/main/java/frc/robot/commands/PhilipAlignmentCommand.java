@@ -49,6 +49,8 @@ public class PhilipAlignmentCommand extends Command {
     SmartDashboard.putNumber("PhilipAlign I", I);
     SmartDashboard.putNumber("PhilipAlign D", D);
     SmartDashboard.putNumber("PhilipAlign FF", FF);
+    SmartDashboard.putNumber("forBackTranslation", 0);
+    SmartDashboard.putNumber("translation", 0);
     
     threshold = 1;
 
@@ -62,6 +64,9 @@ public class PhilipAlignmentCommand extends Command {
     oi = OI.getInstance();
 
     int desiredTarget = (int) limelightShooter.getTargetID();
+    if (!Constants.kReefDesiredAngle.containsKey(desiredTarget))
+      return;
+
     double desiredAngle = Constants.kReefDesiredAngle.get(desiredTarget);
     a1 = Math.cos(Math.toRadians(desiredAngle));
     a2 = Math.sin(Math.toRadians(desiredAngle));
@@ -73,11 +78,12 @@ public class PhilipAlignmentCommand extends Command {
   public void execute() {
 
     double txValue = limelightShooter.getTx();
-    double error = limelightShooter.getFilteredDistance() * Math.sin(txValue*(Math.PI/180)) - 4;
+    double error = limelightShooter.getFilteredDistance() * Math.sin(txValue*(Math.PI/180)) - 0;
 
     SmartDashboard.putNumber("PhilipAlign Error", error);
 
     if (!limelightShooter.hasTarget()){
+      drivetrain.drive(new Translation2d(0, 0), 0, false, null);
      return;
     }
 
@@ -96,15 +102,19 @@ public class PhilipAlignmentCommand extends Command {
     }
 
     double rotation = oi.getRotation();
-    
-    double b1 = oi.getStrafe();
+
+    double b1 = -oi.getStrafe();
     double b2 = oi.getForward();
 
     // a = (a1, a2) b = (b1, b2)
-    double forBackTranslation = a1*b1 + a2*b2;
-    
-    drivetrain.drive(new Translation2d(forBackTranslation, -translation), rotation, false, null);
+    double forBackTranslation = (a1*b1 + a2*b2) * Constants.DriveConstants.kMaxFloorSpeed;
+    //double forBackTranslation = 0;
+    SmartDashboard.putNumber("forBackTranslation", forBackTranslation);
+    SmartDashboard.putNumber("translation", translation);
+    drivetrain.drive(new Translation2d(forBackTranslation, -0), rotation, false, null);
+    // drivetrain.drive(new Translation2d(forBackTranslation, -translation), rotation, false, null);
 
+    
   }
 
   // Called once the command ends or is interrupted.
