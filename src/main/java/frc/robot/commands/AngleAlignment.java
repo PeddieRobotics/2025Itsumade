@@ -64,25 +64,22 @@ public class AngleAlignment extends Command {
 
   @Override
   public void initialize() {
-    // if(limelight.hasTarget()){
-    //   setpoint = Constants.DriveConstants.kReefDesiredAngle.get(limelight.getTargetID()); 
-    // }
+    if(limelight.hasTarget()){
+      setpoint = Constants.kReefDesiredAngle.get((int) limelight.getTargetID()); 
+    }
   }
 
   // Called every time the scheduler runs while the command is scheduled.
   @Override
   public void execute() {
     kP = SmartDashboard.getNumber("angle kP", 0.03); 
-    kI = SmartDashboard.getNumber("angle kI", 0.03); 
+    kI = SmartDashboard.getNumber("angle kI", 0.0); 
     kD = SmartDashboard.getNumber("angle kD", 0); 
     kFF = SmartDashboard.getNumber("angle kFF", 0.0); 
 
     thresholdP = SmartDashboard.getNumber("thresholdP angle", 1.5); 
-
     thresholdP = SmartDashboard.getNumber("angle threshold P", 0.05);
-
     threshold = SmartDashboard.getNumber("angle threshold", 0.5); 
-    setpoint = SmartDashboard.getNumber("angle setpoint", 10.0); 
 
     
     error = setpoint - drivetrain.getHeading(); 

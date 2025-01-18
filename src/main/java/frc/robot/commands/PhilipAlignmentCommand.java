@@ -25,10 +25,15 @@ public class PhilipAlignmentCommand extends Command {
   private Drivetrain drivetrain;
   private OI oi;
   private LimelightShooter limelightShooter;
-  private PIDController pidController;
-  private double threshold;
-  private double P, I, D, FF;
+
+  private PIDController rotationPidController, translationPidController;
+  private double threshold, rotationPIDThreshold, thresholdP, rotation;
+  private double desiredAngle;
+  private double translationP, translationI, translationD, translationFF;
+  private double rotationP, rotationI, rotationD, rotationFF;
   private double a1, a2;
+
+  private int lastTagSeen;
 
   /**
    * Creates a new ExampleCommand.
@@ -39,20 +44,38 @@ public class PhilipAlignmentCommand extends Command {
     drivetrain = Drivetrain.getInstance();
     limelightShooter = LimelightShooter.getInstance();
 
-    P = 0.09;
-    I = 0;
-    D = 0;
-    FF = 0;
-    pidController = new PIDController(P, I , D);
+    desiredAngle = 0;
 
-    SmartDashboard.putNumber("PhilipAlign P", P);
-    SmartDashboard.putNumber("PhilipAlign I", I);
-    SmartDashboard.putNumber("PhilipAlign D", D);
-    SmartDashboard.putNumber("PhilipAlign FF", FF);
+    translationP = 0.11;
+    translationI = 0;
+    translationD = 0;
+    translationFF = 0;
+    translationPidController = new PIDController(translationP, translationI , translationD);
+
+    SmartDashboard.putNumber("PhilipAlign P", translationP);
+    SmartDashboard.putNumber("PhilipAlign I", translationI);
+    SmartDashboard.putNumber("PhilipAlign D", translationD);
+    SmartDashboard.putNumber("PhilipAlign FF", translationFF);
     SmartDashboard.putNumber("forBackTranslation", 0);
     SmartDashboard.putNumber("translation", 0);
-    
+
+    rotationP = 0.027;
+    rotationI = 0.0;
+    rotationD = 0.0;
+    rotationFF = 0.0;
+    rotationPidController = new PIDController(rotationP, rotationI, rotationD);
+
+    SmartDashboard.putNumber("Rotation P", rotationP);
+    SmartDashboard.putNumber("Rotation I", rotationI);
+    SmartDashboard.putNumber("Rotation D", rotationD);
+    SmartDashboard.putNumber("Rotation FF", rotationFF);
+
     threshold = 1;
+    rotationPIDThreshold = 1.5;
+    thresholdP = 0.01;
+    rotation = 0;
+
+    lastTagSeen = -1;
 
     // Use addRequirements() here to declare subsystem dependencies.
     addRequirements(drivetrain);
@@ -67,54 +90,77 @@ public class PhilipAlignmentCommand extends Command {
     if (!Constants.kReefDesiredAngle.containsKey(desiredTarget))
       return;
 
-    double desiredAngle = Constants.kReefDesiredAngle.get(desiredTarget);
+    desiredAngle = Constants.kReefDesiredAngle.get(desiredTarget);
     a1 = Math.cos(Math.toRadians(desiredAngle));
     a2 = Math.sin(Math.toRadians(desiredAngle));
+
+    lastTagSeen = desiredTarget;
   }
 
 
   // Called every time the scheduler runs while the command is scheduled.
   @Override
   public void execute() {
+    translationP = SmartDashboard.getNumber("PhilipAlign P", translationP);
+    translationI = SmartDashboard.getNumber("PhilipAlign I", translationI);
+    translationD = SmartDashboard.getNumber("PhilipAlign D", translationD);
+    translationFF = SmartDashboard.getNumber("PhilipAlign FF", translationFF);
 
-    double txValue = limelightShooter.getTx();
-    double error = limelightShooter.getFilteredDistance() * Math.sin(txValue*(Math.PI/180)) - 0;
+    rotationP = SmartDashboard.getNumber("Rotation P", rotationP);
+    rotationI = SmartDashboard.getNumber("Rotation I", rotationI);
+    rotationD = SmartDashboard.getNumber("Rotation D", rotationD);
+    rotationFF = SmartDashboard.getNumber("Rotation FF", rotationFF);
 
-    SmartDashboard.putNumber("PhilipAlign Error", error);
+    double rotationError = desiredAngle - drivetrain.getHeading();
+    double desiredTx = -rotationError;
 
-    if (!limelightShooter.hasTarget()){
-      drivetrain.drive(new Translation2d(0, 0), 0, false, null);
-     return;
+    // set rotation PID controller
+    if(Math.abs(rotationError) < rotationPIDThreshold){
+      rotationPidController.setP(thresholdP);
+    }else{
+      rotationPidController.setP(rotationP);
     }
+    rotationPidController.setI(rotationI);
+    rotationPidController.setD(rotationD);
 
-    P = SmartDashboard.getNumber("PhilipAlign P", P);
-    I = SmartDashboard.getNumber("PhilipAlign I", I);
-    D = SmartDashboard.getNumber("PhilipAlign D", D);
-    FF = SmartDashboard.getNumber("PhilipAlign FF", FF);
+    // set translation PID controller
+    translationPidController.setPID(translationP, translationI, translationD);
 
-    pidController.setPID(P, I, D);
+    SmartDashboard.putNumber("PhilipAlign desired gyro angle", desiredAngle);
+    SmartDashboard.putNumber("PhilipAlign gyro angle", drivetrain.getHeading());
+    SmartDashboard.putNumber("PhilipAlign desired Tx", desiredTx);
+
+    // if (!limelightShooter.hasTarget() && lastTagSeen == -1) {
+    //   drivetrain.drive(new Translation2d(0, 0), 0, false, null);
+    //  return;
+    // }
 
     double translation = 0;
+    if (limelightShooter.hasTarget()) {
+      double txValue = limelightShooter.getTx();
+      double translationError = limelightShooter.getFilteredDistance() * Math.sin((txValue-desiredTx)*(Math.PI/180)) - 0;
+      SmartDashboard.putNumber("Translation Error", translationError);
 
-
-    if(Math.abs(error) > threshold){
-      translation = pidController.calculate(error) - Math.signum(error) * FF;
+      if(Math.abs(translationError) > threshold){
+        translation = translationPidController.calculate(translationError) - Math.signum(translationError) * translationFF;
+      }
     }
 
-    double rotation = oi.getRotation();
+    // calculate rotation
+    if(rotationError < -threshold){
+      rotation = rotationPidController.calculate(rotationError) - rotationFF;
+    }else if (rotationError > threshold){
+      rotation = rotationPidController.calculate(rotationError) + rotationFF;
+    }else{
+      rotation = 0;
+    }
 
+    // calculate forward-backward translation (a dot b)
     double b1 = -oi.getStrafe();
     double b2 = oi.getForward();
-
-    // a = (a1, a2) b = (b1, b2)
     double forBackTranslation = (a1*b1 + a2*b2) * Constants.DriveConstants.kMaxFloorSpeed;
-    //double forBackTranslation = 0;
-    SmartDashboard.putNumber("forBackTranslation", forBackTranslation);
-    SmartDashboard.putNumber("translation", translation);
-    drivetrain.drive(new Translation2d(forBackTranslation, -0), rotation, false, null);
-    // drivetrain.drive(new Translation2d(forBackTranslation, -translation), rotation, false, null);
-
     
+    drivetrain.drive(new Translation2d(forBackTranslation, -translation), rotation, false, null);
   }
 
   // Called once the command ends or is interrupted.
