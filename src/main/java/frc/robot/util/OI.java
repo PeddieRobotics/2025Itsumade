@@ -7,6 +7,8 @@ import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.commands.AlignmentCommandRobot;
 import frc.robot.commands.PhilipAlignmentCommand;
+import frc.robot.commands.AngleAlignment;
+import frc.robot.commands.AutoAlignment;
 import frc.robot.subsystems.Drivetrain;
 import frc.robot.util.Constants.DriveConstants;
 
@@ -28,8 +30,16 @@ public class OI {
     public void configurate() {
         Trigger PSButton = new JoystickButton(controller, PS4Controller.Button.kPS.value);
         PSButton.onTrue(new InstantCommand(() -> Drivetrain.getInstance().resetGyro()));    
+        
+        
         Trigger SquareButton = new JoystickButton(controller, PS4Controller.Button.kSquare.value);
         SquareButton.whileTrue(new PhilipAlignmentCommand());
+
+        Trigger xButton = new JoystickButton(controller, PS4Controller.Button.kCross.value);
+        xButton.whileTrue(new AutoAlignment());
+        
+        Trigger circleButton = new JoystickButton(controller, PS4Controller.Button.kCircle.value);
+        circleButton.whileTrue(new AngleAlignment());
     }
     
     public double getForward() {
