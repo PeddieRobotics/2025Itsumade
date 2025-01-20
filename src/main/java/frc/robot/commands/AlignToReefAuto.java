@@ -19,7 +19,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 
 /** An example command that uses an example subsystem. */
-public class PhilipAlignmentCommand extends Command {
+public class AlignToReefAuto extends Command {
   private Drivetrain drivetrain;
   private OI oi;
   private LimelightShooter limelightShooter;
@@ -30,22 +30,29 @@ public class PhilipAlignmentCommand extends Command {
   private double desiredAngle;
   private double translationP, translationI, translationD, translationFF;
   private double rotationP, rotationI, rotationD, rotationFF;
+  private double desiredDistance;
+
   private double a1, a2;
 
   private int lastTagSeen;
+
+  private double constantSpeedAuto;
 
   /**
    * Creates a new ExampleCommand.
    *
    * @param subsystem The subsystem used by this command.
    */
-  public PhilipAlignmentCommand() {
+  public AlignToReefAuto() {
     drivetrain = Drivetrain.getInstance();
     limelightShooter = LimelightShooter.getInstance();
 
     desiredAngle = 0;
+    desiredDistance = 35;
 
-    translationP = 0.11;
+    SmartDashboard.putNumber("Desired Distance", desiredDistance);
+
+    translationP = 0.08;
     translationI = 0;
     translationD = 0;
     translationFF = 0;
@@ -74,9 +81,14 @@ public class PhilipAlignmentCommand extends Command {
     rotationUseLowerPThreshold = 1.5;
     
     SmartDashboard.putNumber("rotationThreshold", rotationThreshold);
-    SmartDashboard.putNumber("translat
+    SmartDashboard.putNumber("translationThreshold", translationThreshold);
+    SmartDashboard.putNumber("rotationUseLowerPThreshold", rotationUseLowerPThreshold);
 
     lastTagSeen = -1;
+
+    constantSpeedAuto = 1;
+
+    SmartDashboard.putNumber("Constant Speed Auto", constantSpeedAuto);
 
     // Use addRequirements() here to declare subsystem dependencies.
     addRequirements(drivetrain);
@@ -113,6 +125,12 @@ public class PhilipAlignmentCommand extends Command {
     rotationD = SmartDashboard.getNumber("Rotation D", rotationD);
     rotationFF = SmartDashboard.getNumber("Rotation FF", rotationFF);
 
+    rotationThreshold = SmartDashboard.getNumber("rotationThreshold", rotationThreshold);
+    translationThreshold = SmartDashboard.getNumber("translationThreshold", translationThreshold);
+    rotationUseLowerPThreshold = SmartDashboard.getNumber("rotationUseLowerPThreshold", rotationUseLowerPThreshold);
+
+    desiredDistance = SmartDashboard.getNumber("Desired Distance", desiredDistance);
+
     double rotationError = desiredAngle - drivetrain.getHeading();
     double desiredTx = -rotationError;
 
@@ -136,25 +154,27 @@ public class PhilipAlignmentCommand extends Command {
     //  return;
     // }
 
+    double distance = limelightShooter.getFilteredDistance();
+
     double translation = 0;
+    double forBackTranslation = 0;
     if (limelightShooter.hasTarget()) {
       double txValue = limelightShooter.getTx();
-      double translationError = limelightShooter.getFilteredDistance() * Math.sin((txValue-desiredTx)*(Math.PI/180)) - 0;
-      SmartDashboard.putNumber("Translation Error", translationError);
+      double translationError = distance * Math.sin((txValue-desiredTx)*(Math.PI/180)) - 0;
+
+      SmartDashboard.putNumber("Filtered Distance", distance);
 
       if (Math.abs(translationError) > translationThreshold)
         translation = translationPidController.calculate(translationError) - Math.signum(translationError) * translationFF;
+    
+      if (distance > desiredDistance)
+        forBackTranslation = SmartDashboard.getNumber("Constant Speed Auto", constantSpeedAuto);
     }
 
     // calculate rotation
     double rotation = 0;
-    if (Math.abs(rotationError) < rotationThreshold)
+    if (Math.abs(rotationError) > rotationThreshold)
       rotation = rotationPidController.calculate(rotationError) + Math.signum(rotationError) * rotationFF;
-
-    // calculate forward-backward translation (a dot b)
-    double b1 = -oi.getStrafe();
-    double b2 = oi.getForward();
-    double forBackTranslation = (a1*b1 + a2*b2) * Constants.DriveConstants.kMaxFloorSpeed;
     
     drivetrain.drive(new Translation2d(forBackTranslation, -translation), rotation, false, null);
   }

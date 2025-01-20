@@ -6,7 +6,9 @@ import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.commands.AlignmentCommandRobot;
-import frc.robot.commands.PhilipAlignmentCommand;
+import frc.robot.commands.AlignToReef;
+import frc.robot.commands.AlignToReefAuto;
+import frc.robot.commands.AlignToReefPID;
 import frc.robot.commands.AngleAlignment;
 import frc.robot.commands.AutoAlignment;
 import frc.robot.subsystems.Drivetrain;
@@ -33,10 +35,10 @@ public class OI {
         
         
         Trigger SquareButton = new JoystickButton(controller, PS4Controller.Button.kSquare.value);
-        SquareButton.whileTrue(new PhilipAlignmentCommand());
+        SquareButton.whileTrue(new AlignToReefAuto());
 
         Trigger xButton = new JoystickButton(controller, PS4Controller.Button.kCross.value);
-        xButton.whileTrue(new AutoAlignment());
+        xButton.whileTrue(new AlignToReefPID());
         
         Trigger circleButton = new JoystickButton(controller, PS4Controller.Button.kCircle.value);
         circleButton.whileTrue(new AngleAlignment());
