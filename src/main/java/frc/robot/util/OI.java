@@ -8,7 +8,7 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.commands.AlignmentCommandRobot;
 import frc.robot.commands.AlignToReef;
 import frc.robot.commands.AlignToReefAuto;
-import frc.robot.commands.AlignToReefPID;
+import frc.robot.commands.AlignToReefAuto;
 import frc.robot.commands.AngleAlignment;
 import frc.robot.commands.AutoAlignment;
 import frc.robot.subsystems.Drivetrain;
@@ -38,10 +38,7 @@ public class OI {
         SquareButton.whileTrue(new AlignToReefAuto());
 
         Trigger xButton = new JoystickButton(controller, PS4Controller.Button.kCross.value);
-        xButton.whileTrue(new AlignToReefPID());
-        
-        Trigger circleButton = new JoystickButton(controller, PS4Controller.Button.kCircle.value);
-        circleButton.whileTrue(new AngleAlignment());
+        xButton.whileTrue(new AlignToReefAuto());
     }
     
     public double getForward() {
@@ -67,5 +64,9 @@ public class OI {
         double rightRotation = controller.getRawAxis(PS4Controller.Axis.kL2.value);
         double val = (rightRotation - leftRotation) / 2.0;
         return Math.abs(val) < 0.1 ? 0 : val;
+    }
+
+    public double getDPadPOV() {
+        return controller.getPOV();
     }
 }

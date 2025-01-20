@@ -10,6 +10,7 @@ import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.util.Constants.DriveConstants;
+import frc.robot.util.OI;
 import frc.robot.util.RobotMap;
 
 public class Drivetrain extends SubsystemBase {
@@ -23,6 +24,8 @@ public class Drivetrain extends SubsystemBase {
     
     private final Pigeon2 gyro;
     private double heading;
+
+    private double alignOffset;
 
     public static Drivetrain getInstance() {
         if (instance == null)
@@ -52,6 +55,8 @@ public class Drivetrain extends SubsystemBase {
         
         gyro = new Pigeon2(RobotMap.GYRO_ID, RobotMap.CANIVORE_NAME);
         gyro.setYaw(0);
+
+        alignOffset = 0;
     }
     
     public void resetGyro() {
@@ -105,9 +110,19 @@ public class Drivetrain extends SubsystemBase {
         
         setSwerveModuleStates(states);
     }
+
+    public double getAlignOffset() {
+        return alignOffset;
+    }
     
     @Override
     public void periodic() {
+        double pov = OI.getInstance().getDPadPOV();
+        if (pov == 90)
+            alignOffset = 6.5;
+        else if (pov == 270)
+            alignOffset = -6.5;
+
         SmartDashboard.putNumber("module 0 desired velocity", swerveModules[0].getDesiredState().speedMetersPerSecond);
         SmartDashboard.putNumber("module 1 desired velocity", swerveModules[1].getDesiredState().speedMetersPerSecond);
         SmartDashboard.putNumber("module 2 desired velocity", swerveModules[2].getDesiredState().speedMetersPerSecond);

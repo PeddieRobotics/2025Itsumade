@@ -24,19 +24,18 @@ public class AlignToReefAuto extends Command {
   private OI oi;
   private LimelightShooter limelightShooter;
 
-  private PIDController rotationPidController, translationPidController;
+  private PIDController rotationPidController, translationPidController, distancePidController;
   private double rotationUseLowerPThreshold, rotationThresholdP;
-  private double translationThreshold, rotationThreshold;
+  private double translationThreshold, rotationThreshold, distanceThreshold;
   private double desiredAngle;
   private double translationP, translationI, translationD, translationFF;
   private double rotationP, rotationI, rotationD, rotationFF;
+  private double distanceP, distanceI, distanceD, distanceFF;
   private double desiredDistance;
+  
+  private boolean leftcoral;
 
-  private double a1, a2;
-
-  private int lastTagSeen;
-
-  private double constantSpeedAuto;
+  //private double constantSpeedAuto;
 
   /**
    * Creates a new ExampleCommand.
@@ -48,10 +47,22 @@ public class AlignToReefAuto extends Command {
     limelightShooter = LimelightShooter.getInstance();
 
     desiredAngle = 0;
-    desiredDistance = 35;
+    desiredDistance = 17.0;
 
     SmartDashboard.putNumber("Desired Distance", desiredDistance);
 
+    distanceP = 0.04;
+    distanceI = 0;
+    distanceD = 0.003;
+    distanceFF = 0;
+    distanceThreshold = 1;
+    distancePidController = new PIDController(distanceP, distanceI , distanceD);
+
+    SmartDashboard.putNumber("Distance P", distanceP);
+    SmartDashboard.putNumber("Distance I", distanceI);
+    SmartDashboard.putNumber("Distance D", distanceD);
+    SmartDashboard.putNumber("Distance FF", distanceFF);
+    
     translationP = 0.08;
     translationI = 0;
     translationD = 0;
@@ -82,13 +93,12 @@ public class AlignToReefAuto extends Command {
     
     SmartDashboard.putNumber("rotationThreshold", rotationThreshold);
     SmartDashboard.putNumber("translationThreshold", translationThreshold);
+    SmartDashboard.putNumber("distanceThreshold", distanceThreshold);
     SmartDashboard.putNumber("rotationUseLowerPThreshold", rotationUseLowerPThreshold);
 
-    lastTagSeen = -1;
+    //constantSpeedAuto = 0.5;
 
-    constantSpeedAuto = 1;
-
-    SmartDashboard.putNumber("Constant Speed Auto", constantSpeedAuto);
+    //SmartDashboard.putNumber("Constant Speed Auto", constantSpeedAuto);
 
     // Use addRequirements() here to declare subsystem dependencies.
     addRequirements(drivetrain);
@@ -104,10 +114,6 @@ public class AlignToReefAuto extends Command {
       return;
 
     desiredAngle = Constants.kReefDesiredAngle.get(desiredTarget);
-    a1 = Math.cos(Math.toRadians(desiredAngle));
-    a2 = Math.sin(Math.toRadians(desiredAngle));
-
-    lastTagSeen = desiredTarget;
   }
 
 
@@ -125,8 +131,14 @@ public class AlignToReefAuto extends Command {
     rotationD = SmartDashboard.getNumber("Rotation D", rotationD);
     rotationFF = SmartDashboard.getNumber("Rotation FF", rotationFF);
 
+    distanceP = SmartDashboard.getNumber("Distance P", distanceP);
+    distanceI = SmartDashboard.getNumber("Distance I", distanceI);
+    distanceD = SmartDashboard.getNumber("Distance D", distanceD);
+    distanceFF = SmartDashboard.getNumber("Distance FF", distanceFF);
+
     rotationThreshold = SmartDashboard.getNumber("rotationThreshold", rotationThreshold);
     translationThreshold = SmartDashboard.getNumber("translationThreshold", translationThreshold);
+    distanceThreshold = SmartDashboard.getNumber("distanceThreshold", distanceThreshold);
     rotationUseLowerPThreshold = SmartDashboard.getNumber("rotationUseLowerPThreshold", rotationUseLowerPThreshold);
 
     desiredDistance = SmartDashboard.getNumber("Desired Distance", desiredDistance);
@@ -144,6 +156,7 @@ public class AlignToReefAuto extends Command {
 
     // set translation PID controller
     translationPidController.setPID(translationP, translationI, translationD);
+    distancePidController.setPID(distanceP, distanceI, distanceD);
 
     // SmartDashboard.putNumber("PhilipAlign desired gyro angle", desiredAngle);
     // SmartDashboard.putNumber("PhilipAlign gyro angle", drivetrain.getHeading());
@@ -155,28 +168,39 @@ public class AlignToReefAuto extends Command {
     // }
 
     double distance = limelightShooter.getFilteredDistance();
+    double alignOffset = drivetrain.getAlignOffset();
 
-    double translation = 0;
+    SmartDashboard.putNumber("Align Offset", alignOffset);
+    
+    double horizontalTranslation = 0;
     double forBackTranslation = 0;
     if (limelightShooter.hasTarget()) {
       double txValue = limelightShooter.getTx();
-      double translationError = distance * Math.sin((txValue-desiredTx)*(Math.PI/180)) - 0;
-
-      SmartDashboard.putNumber("Filtered Distance", distance);
+      double translationError = distance * Math.sin((txValue-desiredTx)*(Math.PI/180)) - alignOffset;
+      double distanceError = distance - desiredDistance;
 
       if (Math.abs(translationError) > translationThreshold)
-        translation = translationPidController.calculate(translationError) - Math.signum(translationError) * translationFF;
-    
-      if (distance > desiredDistance)
-        forBackTranslation = SmartDashboard.getNumber("Constant Speed Auto", constantSpeedAuto);
+        horizontalTranslation = translationPidController.calculate(translationError) - Math.signum(translationError) * translationFF;
+
+      if (Math.abs(distanceError) > distanceThreshold)
+        forBackTranslation = distancePidController.calculate(distanceError) - Math.signum(distanceError) * distanceFF;
     }
 
     // calculate rotation
     double rotation = 0;
     if (Math.abs(rotationError) > rotationThreshold)
       rotation = rotationPidController.calculate(rotationError) + Math.signum(rotationError) * rotationFF;
-    
-    drivetrain.drive(new Translation2d(forBackTranslation, -translation), rotation, false, null);
+
+    // calculate forward-backward translation (a dot b)
+    // double b1 = -oi.getStrafe();
+    // double b2 = oi.getForward();
+    // double forBackTranslation = (a1*b1 + a2*b2) * Constants.DriveConstants.kMaxFloorSpeed;
+
+    //constantSpeedAuto = SmartDashboard.getNumber("Constant Speed Auto", constantSpeedAuto);
+
+
+
+    drivetrain.drive(new Translation2d(-forBackTranslation, -horizontalTranslation), rotation, false, null);
   }
 
   // Called once the command ends or is interrupted.
