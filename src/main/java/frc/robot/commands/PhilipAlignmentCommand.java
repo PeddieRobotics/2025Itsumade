@@ -27,7 +27,8 @@ public class PhilipAlignmentCommand extends Command {
   private LimelightShooter limelightShooter;
 
   private PIDController rotationPidController, translationPidController;
-  private double threshold, rotationPIDThreshold, thresholdP, rotation;
+  private double rotationUseLowerPThreshold, rotationThresholdP;
+  private double translationThreshold, rotationThreshold;
   private double desiredAngle;
   private double translationP, translationI, translationD, translationFF;
   private double rotationP, rotationI, rotationD, rotationFF;
@@ -63,17 +64,18 @@ public class PhilipAlignmentCommand extends Command {
     rotationI = 0.0;
     rotationD = 0.0;
     rotationFF = 0.0;
+    rotationThresholdP = 0.01;
     rotationPidController = new PIDController(rotationP, rotationI, rotationD);
 
     SmartDashboard.putNumber("Rotation P", rotationP);
+    SmartDashboard.putNumber("Rotation Threshold P", rotationThresholdP);
     SmartDashboard.putNumber("Rotation I", rotationI);
     SmartDashboard.putNumber("Rotation D", rotationD);
     SmartDashboard.putNumber("Rotation FF", rotationFF);
 
-    threshold = 1;
-    rotationPIDThreshold = 1.5;
-    thresholdP = 0.01;
-    rotation = 0;
+    rotationThreshold = 1;
+    translationThreshold = 1;
+    rotationUseLowerPThreshold = 1.5;
 
     lastTagSeen = -1;
 
@@ -107,6 +109,7 @@ public class PhilipAlignmentCommand extends Command {
     translationFF = SmartDashboard.getNumber("PhilipAlign FF", translationFF);
 
     rotationP = SmartDashboard.getNumber("Rotation P", rotationP);
+    rotationThresholdP = SmartDashboard.getNumber("Rotation Threshold P", rotationThresholdP);
     rotationI = SmartDashboard.getNumber("Rotation I", rotationI);
     rotationD = SmartDashboard.getNumber("Rotation D", rotationD);
     rotationFF = SmartDashboard.getNumber("Rotation FF", rotationFF);
@@ -115,11 +118,10 @@ public class PhilipAlignmentCommand extends Command {
     double desiredTx = -rotationError;
 
     // set rotation PID controller
-    if(Math.abs(rotationError) < rotationPIDThreshold){
-      rotationPidController.setP(thresholdP);
-    }else{
+    if(Math.abs(rotationError) < rotationUseLowerPThreshold)
+      rotationPidController.setP(rotationThresholdP);
+    else
       rotationPidController.setP(rotationP);
-    }
     rotationPidController.setI(rotationI);
     rotationPidController.setD(rotationD);
 
@@ -141,19 +143,14 @@ public class PhilipAlignmentCommand extends Command {
       double translationError = limelightShooter.getFilteredDistance() * Math.sin((txValue-desiredTx)*(Math.PI/180)) - 0;
       SmartDashboard.putNumber("Translation Error", translationError);
 
-      if(Math.abs(translationError) > threshold){
+      if (Math.abs(translationError) > translationThreshold)
         translation = translationPidController.calculate(translationError) - Math.signum(translationError) * translationFF;
-      }
     }
 
     // calculate rotation
-    if(rotationError < -threshold){
-      rotation = rotationPidController.calculate(rotationError) - rotationFF;
-    }else if (rotationError > threshold){
-      rotation = rotationPidController.calculate(rotationError) + rotationFF;
-    }else{
-      rotation = 0;
-    }
+    double rotation = 0;
+    if (Math.abs(rotationError) < rotationThreshold)
+      rotation = rotationPidController.calculate(rotationError) + Math.signum(rotationError) * rotationFF;
 
     // calculate forward-backward translation (a dot b)
     double b1 = -oi.getStrafe();
