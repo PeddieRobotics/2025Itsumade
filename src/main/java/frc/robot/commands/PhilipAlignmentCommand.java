@@ -20,8 +20,6 @@ import edu.wpi.first.wpilibj2.command.Command;
 
 /** An example command that uses an example subsystem. */
 public class PhilipAlignmentCommand extends Command {
-  @SuppressWarnings({"PMD.UnusedPrivateField", "PMD.SingularField"})
-
   private Drivetrain drivetrain;
   private OI oi;
   private LimelightShooter limelightShooter;
@@ -57,8 +55,6 @@ public class PhilipAlignmentCommand extends Command {
     SmartDashboard.putNumber("PhilipAlign I", translationI);
     SmartDashboard.putNumber("PhilipAlign D", translationD);
     SmartDashboard.putNumber("PhilipAlign FF", translationFF);
-    SmartDashboard.putNumber("forBackTranslation", 0);
-    SmartDashboard.putNumber("translation", 0);
 
     rotationP = 0.027;
     rotationI = 0.0;
@@ -76,6 +72,9 @@ public class PhilipAlignmentCommand extends Command {
     rotationThreshold = 1;
     translationThreshold = 1;
     rotationUseLowerPThreshold = 1.5;
+    
+    SmartDashboard.putNumber("rotationThreshold", rotationThreshold);
+    SmartDashboard.putNumber("translat
 
     lastTagSeen = -1;
 
@@ -128,10 +127,10 @@ public class PhilipAlignmentCommand extends Command {
     // set translation PID controller
     translationPidController.setPID(translationP, translationI, translationD);
 
-    SmartDashboard.putNumber("PhilipAlign desired gyro angle", desiredAngle);
-    SmartDashboard.putNumber("PhilipAlign gyro angle", drivetrain.getHeading());
-    SmartDashboard.putNumber("PhilipAlign desired Tx", desiredTx);
-
+    // SmartDashboard.putNumber("PhilipAlign desired gyro angle", desiredAngle);
+    // SmartDashboard.putNumber("PhilipAlign gyro angle", drivetrain.getHeading());
+    // SmartDashboard.putNumber("PhilipAlign desired Tx", desiredTx);
+    //
     // if (!limelightShooter.hasTarget() && lastTagSeen == -1) {
     //   drivetrain.drive(new Translation2d(0, 0), 0, false, null);
     //  return;
