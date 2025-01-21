@@ -33,8 +33,6 @@ public class AlignToReefAuto extends Command {
   private double distanceP, distanceI, distanceD, distanceFF;
   private double desiredDistance;
   
-  private boolean leftcoral;
-
   //private double constantSpeedAuto;
 
   /**
@@ -120,6 +118,7 @@ public class AlignToReefAuto extends Command {
   // Called every time the scheduler runs while the command is scheduled.
   @Override
   public void execute() {
+    limelightShooter.setPipeline(drivetrain.getPipelineNumber());
     translationP = SmartDashboard.getNumber("PhilipAlign P", translationP);
     translationI = SmartDashboard.getNumber("PhilipAlign I", translationI);
     translationD = SmartDashboard.getNumber("PhilipAlign D", translationD);
@@ -168,15 +167,19 @@ public class AlignToReefAuto extends Command {
     // }
 
     double distance = limelightShooter.getFilteredDistance();
-    double alignOffset = drivetrain.getAlignOffset();
 
-    SmartDashboard.putNumber("Align Offset", alignOffset);
     
     double horizontalTranslation = 0;
     double forBackTranslation = 0;
     if (limelightShooter.hasTarget()) {
       double txValue = limelightShooter.getTx();
-      double translationError = distance * Math.sin((txValue-desiredTx)*(Math.PI/180)) - alignOffset;
+      double translationError = 0;
+      if (Math.abs(txValue) < 3) {
+        translationError = txValue - desiredTx;
+      } else {
+        translationError = distance * Math.sin((txValue-desiredTx)*(Math.PI/180));
+      }
+      SmartDashboard.putNumber("Translation Error", translationError);
       double distanceError = distance - desiredDistance;
 
       if (Math.abs(translationError) > translationThreshold)

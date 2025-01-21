@@ -25,7 +25,7 @@ public class Drivetrain extends SubsystemBase {
     private final Pigeon2 gyro;
     private double heading;
 
-    private double alignOffset;
+    private int pipelineNumber;
 
     public static Drivetrain getInstance() {
         if (instance == null)
@@ -56,7 +56,7 @@ public class Drivetrain extends SubsystemBase {
         gyro = new Pigeon2(RobotMap.GYRO_ID, RobotMap.CANIVORE_NAME);
         gyro.setYaw(0);
 
-        alignOffset = 0;
+        pipelineNumber = 0;
     }
     
     public void resetGyro() {
@@ -111,17 +111,17 @@ public class Drivetrain extends SubsystemBase {
         setSwerveModuleStates(states);
     }
 
-    public double getAlignOffset() {
-        return alignOffset;
+    public int getPipelineNumber() {
+        return pipelineNumber;
     }
     
     @Override
     public void periodic() {
         double pov = OI.getInstance().getDPadPOV();
         if (pov == 90)
-            alignOffset = 6.5;
+            pipelineNumber = 1;
         else if (pov == 270)
-            alignOffset = -6.5;
+            pipelineNumber = 0;
 
         SmartDashboard.putNumber("module 0 desired velocity", swerveModules[0].getDesiredState().speedMetersPerSecond);
         SmartDashboard.putNumber("module 1 desired velocity", swerveModules[1].getDesiredState().speedMetersPerSecond);
