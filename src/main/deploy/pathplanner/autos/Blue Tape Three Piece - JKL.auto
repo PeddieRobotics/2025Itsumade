@@ -7,19 +7,31 @@
         {
           "type": "path",
           "data": {
-            "pathName": "0.5 meter back"
-          }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "ALIGN_TO_REEF"
+            "pathName": "Blue Tape to J"
           }
         },
         {
           "type": "path",
           "data": {
-            "pathName": "0.5 meter back"
+            "pathName": "J to HP"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "HP to K"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "K to HP"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "HP to L"
           }
         }
       ]

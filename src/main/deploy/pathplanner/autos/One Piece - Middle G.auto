@@ -7,13 +7,13 @@
         {
           "type": "path",
           "data": {
-            "pathName": "0.5 meter right"
+            "pathName": "Middle to G"
           }
         }
       ]
     }
   },
   "resetOdom": true,
-  "folder": null,
+  "folder": "Mid Start",
   "choreoAuto": false
 }
