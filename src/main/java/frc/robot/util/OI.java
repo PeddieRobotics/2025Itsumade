@@ -6,6 +6,7 @@ import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.commands.AlignmentCommandRobot;
+import frc.robot.commands.Align;
 import frc.robot.commands.AlignToReef;
 import frc.robot.commands.AlignToReefAuto;
 import frc.robot.commands.AlignToReefAuto;
@@ -39,6 +40,9 @@ public class OI {
 
         Trigger xButton = new JoystickButton(controller, PS4Controller.Button.kCross.value);
         xButton.whileTrue(new AlignToReefAuto());
+
+        Trigger triangleButton = new JoystickButton(controller, PS4Controller.Button.kTriangle.value);
+        triangleButton.whileTrue(new Align());
     }
     
     public double getForward() {
