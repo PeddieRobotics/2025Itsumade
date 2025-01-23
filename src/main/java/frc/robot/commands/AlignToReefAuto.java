@@ -32,6 +32,9 @@ public class AlignToReefAuto extends Command {
   private double rotationP, rotationI, rotationD, rotationFF;
   private double distanceP, distanceI, distanceD, distanceFF;
   private double desiredDistance;
+  private double txValue, rotationError, distanceError;
+  private double cycleCount;
+  private Translation2d previousTranslation;
   
   //private double constantSpeedAuto;
 
@@ -94,6 +97,8 @@ public class AlignToReefAuto extends Command {
     SmartDashboard.putNumber("distanceThreshold", distanceThreshold);
     SmartDashboard.putNumber("rotationUseLowerPThreshold", rotationUseLowerPThreshold);
 
+    previousTranslation = new Translation2d(0, 0);
+
     //constantSpeedAuto = 0.5;
 
     //SmartDashboard.putNumber("Constant Speed Auto", constantSpeedAuto);
@@ -112,6 +117,10 @@ public class AlignToReefAuto extends Command {
       return;
 
     desiredAngle = Constants.kReefDesiredAngle.get(desiredTarget);
+
+    previousTranslation = new Translation2d(0, 0);
+
+    cycleCount = 0;
   }
 
 
@@ -142,7 +151,7 @@ public class AlignToReefAuto extends Command {
 
     desiredDistance = SmartDashboard.getNumber("Desired Distance", desiredDistance);
 
-    double rotationError = desiredAngle - drivetrain.getHeading();
+    rotationError = desiredAngle - drivetrain.getHeading();
     double desiredTx = -rotationError;
 
     // set rotation PID controller
@@ -172,7 +181,7 @@ public class AlignToReefAuto extends Command {
     double horizontalTranslation = 0;
     double forBackTranslation = 0;
     if (limelightShooter.hasTarget()) {
-      double txValue = limelightShooter.getTx();
+      txValue = limelightShooter.getTx();
       double translationError = 0;
       if (Math.abs(txValue) < 3) {
         translationError = txValue - desiredTx;
@@ -180,13 +189,15 @@ public class AlignToReefAuto extends Command {
         translationError = distance * Math.sin((txValue-desiredTx)*(Math.PI/180));
       }
       SmartDashboard.putNumber("Translation Error", translationError);
-      double distanceError = distance - desiredDistance;
+      distanceError = distance - desiredDistance;
 
       if (Math.abs(translationError) > translationThreshold)
         horizontalTranslation = translationPidController.calculate(translationError) - Math.signum(translationError) * translationFF;
 
       if (Math.abs(distanceError) > distanceThreshold)
         forBackTranslation = distancePidController.calculate(distanceError) - Math.signum(distanceError) * distanceFF;
+
+      previousTranslation = new Translation2d(-forBackTranslation, -horizontalTranslation);
     }
 
     // calculate rotation
@@ -201,20 +212,26 @@ public class AlignToReefAuto extends Command {
 
     //constantSpeedAuto = SmartDashboard.getNumber("Constant Speed Auto", constantSpeedAuto);
 
+    drivetrain.drive(previousTranslation, rotation, false, null);
 
+    cycleCount++;
 
-    drivetrain.drive(new Translation2d(-forBackTranslation, -horizontalTranslation), rotation, false, null);
+    SmartDashboard.putBoolean("reef align is finished", isFinished());
   }
 
   // Called once the command ends or is interrupted.
   @Override
   public void end(boolean interrupted) {
+    SmartDashboard.putBoolean("reef align is finished", true);
     drivetrain.drive(new Translation2d(0,0), 0, false, null);
   }
 
   // Returns true when the command should end.
   @Override
   public boolean isFinished() {
-    return false;
+    // |Tx| < .5 degree
+    // |Gyro error| < 1 degreee
+    // return false;
+    return Math.abs(txValue) < 1 && Math.abs(rotationError) < 1 && cycleCount >= 10 && Math.abs(distanceError) < 1;
   }
 }

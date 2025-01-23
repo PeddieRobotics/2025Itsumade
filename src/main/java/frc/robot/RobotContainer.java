@@ -7,6 +7,7 @@ package frc.robot;
 import frc.robot.commands.Autos;
 import frc.robot.commands.AutoAlignment;
 import frc.robot.commands.SwerveDriveCommand;
+import frc.robot.subsystems.Autonomous;
 import frc.robot.subsystems.Drivetrain;
 import frc.robot.subsystems.LimelightShooter;
 import frc.robot.subsystems.SwerveModule;
@@ -14,6 +15,7 @@ import frc.robot.util.OI;
 
 import java.io.ObjectInputFilter.Config;
 
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
@@ -28,6 +30,7 @@ public class RobotContainer {
   private Drivetrain drivetrain;
   private LimelightShooter limelightShooter;
   private OI oi;
+  private Autonomous autonomous;
 
   public RobotContainer() {
     drivetrain = Drivetrain.getInstance();
@@ -37,9 +40,12 @@ public class RobotContainer {
     // oi.configurate();
     
     limelightShooter = LimelightShooter.getInstance();
+    autonomous = Autonomous.getInstance();  
+
+    SmartDashboard.putData("Auto Routines", autonomous.getAutoChooser());
   }
 
   public Command getAutonomousCommand() {
-    return null;
+    return Autonomous.getAutonomousCommand();
   }
 }

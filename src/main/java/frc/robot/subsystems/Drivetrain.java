@@ -2,6 +2,8 @@ package frc.robot.subsystems;
 
 import com.ctre.phoenix6.hardware.Pigeon2;
 
+import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
@@ -26,6 +28,8 @@ public class Drivetrain extends SubsystemBase {
     private double heading;
 
     private int pipelineNumber;
+
+    private SwerveDrivePoseEstimator odometry;
 
     public static Drivetrain getInstance() {
         if (instance == null)
@@ -56,6 +60,8 @@ public class Drivetrain extends SubsystemBase {
         gyro = new Pigeon2(RobotMap.GYRO_ID, RobotMap.CANIVORE_NAME);
         gyro.setYaw(0);
 
+        odometry = new SwerveDrivePoseEstimator(DriveConstants.kinematics, getHeadingAsRotation2d(), positions, new Pose2d());
+
         pipelineNumber = 0;
     }
     
@@ -80,9 +86,36 @@ public class Drivetrain extends SubsystemBase {
             positions[i] = swerveModules[i].getPosition();
     }
     
+    public Pose2d getPose(){
+        return odometry.getEstimatedPosition();
+    }
+
+    public void resetPose(Pose2d pose){
+        gyro.reset();
+        odometry.resetPosition(getHeadingAsRotation2d(), positions, pose);
+    }
+    
+    public ChassisSpeeds getRobotRelativeSpeeds(){
+        return DriveConstants.kinematics.toChassisSpeeds(
+                                                          frontLeft.getState(), 
+                                                          frontRight.getState(), 
+                                                          backLeft.getState(), 
+                                                          backRight.getState()
+                                                        );
+    }
+
+    public void driveRobotRelative(ChassisSpeeds robotRelativeSpeeds){
+        states = DriveConstants.kinematics.toSwerveModuleStates(robotRelativeSpeeds);
+        setSwerveModuleStates(states);
+    }
+
     public void setSwerveModuleStates(SwerveModuleState[] desiredStates) {
         for (int i = 0; i < 4; i++)
             swerveModules[i].setDesiredState(desiredStates[i]);
+    }
+
+    public void updateOdometry(){
+        odometry.update(getHeadingAsRotation2d(), positions);
     }
     
     // in radians/s
@@ -123,6 +156,9 @@ public class Drivetrain extends SubsystemBase {
         else if (pov == 270)
             pipelineNumber = 0;
 
+        updateModulePositions();
+        updateOdometry();
+
         SmartDashboard.putNumber("module 0 desired velocity", swerveModules[0].getDesiredState().speedMetersPerSecond);
         SmartDashboard.putNumber("module 1 desired velocity", swerveModules[1].getDesiredState().speedMetersPerSecond);
         SmartDashboard.putNumber("module 2 desired velocity", swerveModules[2].getDesiredState().speedMetersPerSecond);
@@ -145,5 +181,9 @@ public class Drivetrain extends SubsystemBase {
 
         SmartDashboard.putNumber("gyro angle1", getHeading()); 
         SmartDashboard.putNumber("gyro angle2", getDegrees()); 
+
+        SmartDashboard.putNumber("odometry x", odometry.getEstimatedPosition().getX());
+        SmartDashboard.putNumber("odometry y", odometry.getEstimatedPosition().getY());
+        SmartDashboard.putNumber("odometry angle", odometry.getEstimatedPosition().getRotation().getDegrees());
     }
 }
