@@ -16,6 +16,7 @@ import com.ctre.phoenix6.signals.PIDRefPIDErr_ClosedLoopModeValue;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 
@@ -53,15 +54,15 @@ public class DirectAlign extends Command {
     limelightShooter = LimelightShooter.getInstance();
 
     desiredAngle = 0;
-    desiredDistance = 17.0;
+    desiredDistance = 25.0;
     framesNotSeen = 0;
 
     SmartDashboard.putNumber("Desired Distance", desiredDistance);
     
-    translationP = 0.08;
+    translationP = 0.04;
     translationI = 0;
     translationD = 0;
-    translationFF = 0;
+    translationFF = 0.02;
     translationPidController = new PIDController(translationP, translationI , translationD);
 
     SmartDashboard.putNumber("Translation P", translationP);
@@ -141,12 +142,15 @@ public class DirectAlign extends Command {
       framesNotSeen=0;
       tx = limelightShooter.getTx();
       distance = limelightShooter.getFilteredDistance();
+      SmartDashboard.putNumber("LL distance",distance);
     } else {// in increasing order of complexity: use last value, keep rate of change, recalculate according to robot speeds
       framesNotSeen++;
     }
 
-    Translation2d translationVector = new Translation2d(translationPidController.calculate(distance, desiredDistance),0);
-    translationVector.rotateBy(new Rotation2d(tx));
+    double translationError = distance-desiredDistance;
+    SmartDashboard.putNumber("Translation error", translationError);
+    Translation2d translationVector = new Translation2d(-translationPidController.calculate(translationError)+Math.signum(translationError)*translationFF,0);
+    translationVector=translationVector.rotateBy(Rotation2d.fromDegrees(tx));
 
     drivetrain.drive(translationVector,0,false,null);
     

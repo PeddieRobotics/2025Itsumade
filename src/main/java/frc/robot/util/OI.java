@@ -11,6 +11,7 @@ import frc.robot.commands.AlignToReefAuto;
 import frc.robot.commands.AlignToReefAuto;
 import frc.robot.commands.AngleAlignment;
 import frc.robot.commands.AutoAlignment;
+import frc.robot.commands.DirectAlign;
 import frc.robot.subsystems.Drivetrain;
 import frc.robot.util.Constants.DriveConstants;
 
@@ -38,7 +39,7 @@ public class OI {
         SquareButton.whileTrue(new AlignToReefAuto());
 
         Trigger xButton = new JoystickButton(controller, PS4Controller.Button.kCross.value);
-        xButton.whileTrue(new AlignToReefAuto());
+        xButton.whileTrue(new DirectAlign());
     }
     
     public double getForward() {
