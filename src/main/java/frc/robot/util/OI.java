@@ -12,7 +12,7 @@ import frc.robot.commands.AlignToReef;
 import frc.robot.commands.AlignToReef;
 import frc.robot.commands.AngleAlignment;
 import frc.robot.commands.AutoAlignment;
-import frc.robot.commands.wheelRadiusCharacterization;
+import frc.robot.commands.WheelRadiusCharacterization;
 import frc.robot.subsystems.Drivetrain;
 import frc.robot.util.Constants.DriveConstants;
 
@@ -46,7 +46,7 @@ public class OI {
         // triangleButton.whileTrue(new Align());
 
         Trigger oButton = new JoystickButton(controller, PS4Controller.Button.kCircle.value);
-        oButton.whileTrue(new wheelRadiusCharacterization());
+        oButton.whileTrue(new WheelRadiusCharacterization());
 
     }
     

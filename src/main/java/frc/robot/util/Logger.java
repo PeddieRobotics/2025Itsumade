@@ -16,6 +16,7 @@ import frc.robot.subsystems.LimelightShooter;
 public class Logger {
     private static Logger instance;
     public DoubleLogEntry cmdTranslationEntry, cmdDistanceEntry, cmdRotationEntry, cmdCommandXEntry, cmdCommandYEntry, cmdCommandRotationEntry;
+    public DoubleLogEntry deltaGyro, averageDeltaPositions, effectiveWheelRadius;
     private DataLog log = DataLogManager.getLog();
     private Pose2d fieldPosition;
 
@@ -40,6 +41,9 @@ public class Logger {
         cmdCommandXEntry = new DoubleLogEntry(log, "Align Command/Commanded X");
         cmdCommandYEntry = new DoubleLogEntry(log, "Align Command/Commanded Y");
         cmdCommandRotationEntry = new DoubleLogEntry(log, "Align Command/Commanded Rotation");
+        deltaGyro = new DoubleLogEntry(log, "Characterization Command/deltaGyro");
+        averageDeltaPositions = new DoubleLogEntry(log, "Characterization Command/averageDeltaPositions");
+        effectiveWheelRadius = new DoubleLogEntry(log, "Characterization Command/effectiveWheelRadius");
     }
 
     public void logEvent(String event, Boolean isStart) {

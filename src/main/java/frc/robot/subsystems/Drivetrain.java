@@ -23,6 +23,8 @@ public class Drivetrain extends SubsystemBase {
     
     private SwerveModuleState[] states;
     private SwerveModulePosition[] positions;
+
+    private double[] radianPositions;
     
     private final Pigeon2 gyro;
     private double heading;
@@ -54,6 +56,10 @@ public class Drivetrain extends SubsystemBase {
             frontLeft.getPosition(), frontRight.getPosition(),
             backLeft.getPosition(), backRight.getPosition()
         };
+
+        radianPositions = new double[]{
+            frontLeft.getPositionRadians(), frontRight.getPositionRadians(), 
+            backLeft.getPositionRadians(), backRight.getPositionRadians()};
         // set states to the values calculated for 0 movement
         states = DriveConstants.kinematics.toSwerveModuleStates(new ChassisSpeeds(0, 0, 0));
         
@@ -67,6 +73,10 @@ public class Drivetrain extends SubsystemBase {
 
     public SwerveModulePosition[] getSwerveModulePosition(){
         return positions;
+    }
+
+    public double[] getSwerveModuleRadianPosition(){
+        return radianPositions;
     }
     
     public void resetGyro() {
@@ -86,8 +96,11 @@ public class Drivetrain extends SubsystemBase {
     }
     
     public void updateModulePositions() {
-        for (int i = 0; i < 4; i++)
+        for (int i = 0; i < 4; i++){
+            radianPositions[i] = swerveModules[i].getPositionRadians();
+
             positions[i] = swerveModules[i].getPosition();
+        }
     }
     
     public Pose2d getPose(){
@@ -142,6 +155,8 @@ public class Drivetrain extends SubsystemBase {
         SmartDashboard.putNumber("module 2 rotation deg", states[2].angle.getDegrees());
         SmartDashboard.putNumber("module 3 rotation deg", states[3].angle.getDegrees());
 
+
+
         for (int i = 0; i < 4; i++)
             states[i].optimize(new Rotation2d(swerveModules[i].getCANCoderRadians()));
         
@@ -182,6 +197,8 @@ public class Drivetrain extends SubsystemBase {
         SmartDashboard.putNumber("module 1 actual angle", swerveModules[1].getCANCoderRadians());
         SmartDashboard.putNumber("module 2 actual angle", swerveModules[2].getCANCoderRadians());
         SmartDashboard.putNumber("module 3 actual angle", swerveModules[3].getCANCoderRadians());
+
+        SmartDashboard.putNumber("module 0 radian position", swerveModules[0].getPositionRadians());
 
         SmartDashboard.putNumber("gyro angle1", getHeading()); 
         SmartDashboard.putNumber("gyro angle2", getDegrees()); 

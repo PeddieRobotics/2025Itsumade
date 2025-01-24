@@ -115,6 +115,10 @@ public class SwerveModule extends SubsystemBase {
 	  );
 	}
 
+	public double getPositionRadians(){
+		return drive.getPosition();
+	}
+
 	public SwerveModuleState getDesiredState() {
 		return desiredState;
 	}
