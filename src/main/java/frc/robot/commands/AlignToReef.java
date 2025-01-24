@@ -37,7 +37,7 @@ public class AlignToReef extends Command {
   private double desiredDistance;
   private double txValue, rotationError, distanceError;
   private double startTime;
-  private Translation2d previousTranslation;
+  private Translation2d translation;
   private boolean isAuto;
 
   private Logger logger;
@@ -61,7 +61,7 @@ public class AlignToReef extends Command {
 
     SmartDashboard.putNumber("Desired Distance", desiredDistance);
 
-    distanceP = 0.04;
+    distanceP = 0.044;
     distanceI = 0;
     distanceD = 0.003;
     distanceFF = 0;
@@ -73,10 +73,10 @@ public class AlignToReef extends Command {
     SmartDashboard.putNumber("Distance D", distanceD);
     SmartDashboard.putNumber("Distance FF", distanceFF);
     
-    translationP = 0.08;
+    translationP = 0.07;
     translationI = 0;
     translationD = 0;
-    translationFF = 0;
+    translationFF = 0.001;
     translationPidController = new PIDController(translationP, translationI , translationD);
 
     SmartDashboard.putNumber("PhilipAlign P", translationP);
@@ -84,11 +84,11 @@ public class AlignToReef extends Command {
     SmartDashboard.putNumber("PhilipAlign D", translationD);
     SmartDashboard.putNumber("PhilipAlign FF", translationFF);
 
-    rotationP = 0.027;
+    rotationP = 0.07;
     rotationI = 0.0;
     rotationD = 0.0;
     rotationFF = 0.0;
-    rotationThresholdP = 0.01;
+    rotationThresholdP = 0.04;
     rotationPidController = new PIDController(rotationP, rotationI, rotationD);
 
     SmartDashboard.putNumber("Rotation P", rotationP);
@@ -106,7 +106,7 @@ public class AlignToReef extends Command {
     SmartDashboard.putNumber("distanceThreshold", distanceThreshold);
     SmartDashboard.putNumber("rotationUseLowerPThreshold", rotationUseLowerPThreshold);
 
-    previousTranslation = new Translation2d(0, 0);
+    translation = new Translation2d(0, 0);
 
     //constantSpeedAuto = 0.5;
 
@@ -127,7 +127,7 @@ public class AlignToReef extends Command {
 
     desiredAngle = Constants.kReefDesiredAngle.get(desiredTarget);
 
-    previousTranslation = new Translation2d(0, 0);
+    translation = new Translation2d(0, 0);
 
     startTime = Timer.getFPGATimestamp();
   }
@@ -177,7 +177,7 @@ public class AlignToReef extends Command {
 
     // SmartDashboard.putNumber("PhilipAlign desired gyro angle", desiredAngle);
     // SmartDashboard.putNumber("PhilipAlign gyro angle", drivetrain.getHeading());
-    // SmartDashboard.putNumber("PhilipAlign desired Tx", desiredTx);
+    // SmartDashboard.putNumber("PhilipAlign desired Tx", desiredTx);2
     //
     // if (!limelightShooter.hasTarget() && lastTagSeen == -1) {
     //   drivetrain.drive(new Translation2d(0, 0), 0, false, null);
@@ -208,11 +208,13 @@ public class AlignToReef extends Command {
       if (Math.abs(distanceError) > distanceThreshold)
         forBackTranslation = distancePidController.calculate(distanceError) - Math.signum(distanceError) * distanceFF;
 
-      previousTranslation = new Translation2d(-forBackTranslation, -horizontalTranslation);
+      translation = new Translation2d(-forBackTranslation, -horizontalTranslation);
 
       logger.cmdTranslationEntry.append(translationError);
       logger.cmdDistanceEntry.append(distanceError);
     }
+    else
+      translation = new Translation2d(translation.getX() / 2, translation.getY() / 2);
 
     SmartDashboard.putNumber("Rotation Error", rotationError);
     logger.cmdRotationEntry.append(rotationError);
@@ -229,11 +231,11 @@ public class AlignToReef extends Command {
 
     //constantSpeedAuto = SmartDashboard.getNumber("Constant Speed Auto", constantSpeedAuto);
 
-    logger.cmdCommandXEntry.append(previousTranslation.getX());
-    logger.cmdCommandYEntry.append(previousTranslation.getY());
+    logger.cmdCommandXEntry.append(translation.getX());
+    logger.cmdCommandYEntry.append(translation.getY());
     logger.cmdCommandRotationEntry.append(rotation);
 
-    drivetrain.drive(previousTranslation, rotation, false, null);
+    drivetrain.drive(translation, rotation, false, null);
   }
 
   // Called once the command ends or is interrupted.

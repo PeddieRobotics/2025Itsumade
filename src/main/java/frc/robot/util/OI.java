@@ -33,12 +33,11 @@ public class OI {
         Trigger PSButton = new JoystickButton(controller, PS4Controller.Button.kPS.value);
         PSButton.onTrue(new InstantCommand(() -> Drivetrain.getInstance().resetGyro()));    
         
-        
         Trigger SquareButton = new JoystickButton(controller, PS4Controller.Button.kSquare.value);
         SquareButton.whileTrue(new AlignToReef(false));
 
-        Trigger xButton = new JoystickButton(controller, PS4Controller.Button.kCross.value);
-        xButton.toggleOnTrue(new AlignToReef(true));
+        // Trigger xButton = new JoystickButton(controller, PS4Controller.Button.kCross.value);
+        // xButton.toggleOnTrue(new AlignToReef(true));
     }
     
     public double getForward() {
