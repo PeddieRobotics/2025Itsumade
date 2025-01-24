@@ -58,6 +58,10 @@ public class Drivetrain extends SubsystemBase {
 
         pipelineNumber = 0;
     }
+
+    public SwerveModulePosition[] getSwerveModulePosition(){
+        return positions;
+    }
     
     public void resetGyro() {
         gyro.reset();

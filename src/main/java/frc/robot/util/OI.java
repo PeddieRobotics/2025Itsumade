@@ -12,6 +12,7 @@ import frc.robot.commands.AlignToReefAuto;
 import frc.robot.commands.AlignToReefAuto;
 import frc.robot.commands.AngleAlignment;
 import frc.robot.commands.AutoAlignment;
+import frc.robot.commands.wheelRadiusCharacterization;
 import frc.robot.subsystems.Drivetrain;
 import frc.robot.util.Constants.DriveConstants;
 
@@ -35,14 +36,17 @@ public class OI {
         PSButton.onTrue(new InstantCommand(() -> Drivetrain.getInstance().resetGyro()));    
         
         
-        Trigger SquareButton = new JoystickButton(controller, PS4Controller.Button.kSquare.value);
-        SquareButton.whileTrue(new AlignToReefAuto());
+        // Trigger SquareButton = new JoystickButton(controller, PS4Controller.Button.kSquare.value);
+        // SquareButton.whileTrue(new AlignToReefAuto());
 
-        Trigger xButton = new JoystickButton(controller, PS4Controller.Button.kCross.value);
-        xButton.whileTrue(new AlignToReefAuto());
+        // Trigger xButton = new JoystickButton(controller, PS4Controller.Button.kCross.value);
+        // xButton.whileTrue(new AlignToReefAuto());
 
-        Trigger triangleButton = new JoystickButton(controller, PS4Controller.Button.kTriangle.value);
-        triangleButton.whileTrue(new Align());
+        // Trigger triangleButton = new JoystickButton(controller, PS4Controller.Button.kTriangle.value);
+        // triangleButton.whileTrue(new Align());
+
+        Trigger oButton = new JoystickButton(controller, PS4Controller.Button.kCircle.value);
+        oButton.whileTrue(new wheelRadiusCharacterization());
     }
     
     public double getForward() {
