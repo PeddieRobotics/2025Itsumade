@@ -1,0 +1,43 @@
+{
+  "version": "2025.0",
+  "command": {
+    "type": "sequential",
+    "data": {
+      "commands": [
+        {
+          "type": "path",
+          "data": {
+            "pathName": "0.5 meter back, 0.1 meter right"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Copy of 0.5 meter back"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "ALIGN_TO_REEF"
+          }
+        },
+        {
+          "type": "wait",
+          "data": {
+            "waitTime": 1.0
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "0.5 meter back"
+          }
+        }
+      ]
+    }
+  },
+  "resetOdom": true,
+  "folder": null,
+  "choreoAuto": false
+}

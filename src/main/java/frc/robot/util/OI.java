@@ -8,8 +8,8 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.commands.AlignmentCommandRobot;
 import frc.robot.commands.Align;
 import frc.robot.commands.AlignToReef;
-import frc.robot.commands.AlignToReefAuto;
-import frc.robot.commands.AlignToReefAuto;
+import frc.robot.commands.AlignToReef;
+import frc.robot.commands.AlignToReef;
 import frc.robot.commands.AngleAlignment;
 import frc.robot.commands.AutoAlignment;
 import frc.robot.commands.wheelRadiusCharacterization;
@@ -47,6 +47,7 @@ public class OI {
 
         Trigger oButton = new JoystickButton(controller, PS4Controller.Button.kCircle.value);
         oButton.whileTrue(new wheelRadiusCharacterization());
+
     }
     
     public double getForward() {
