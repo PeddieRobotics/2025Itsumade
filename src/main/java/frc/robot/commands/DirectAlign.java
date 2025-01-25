@@ -142,49 +142,20 @@ public class DirectAlign extends Command {
       framesNotSeen=0;
       tx = limelightShooter.getTx();
       distance = limelightShooter.getFilteredDistance();
-      SmartDashboard.putNumber("LL distance",distance);
     } else {// in increasing order of complexity: use last value, keep rate of change, recalculate according to robot speeds
       framesNotSeen++;
     }
 
+    //Translation pose lerping
+    Translation2d robotRelativeSpeed = drivetrain.getRobotRelativeTranslation();
+    SmartDashboard.putNumber("robot x speed", robotRelativeSpeed.getX());
+    SmartDashboard.putNumber("robot y speed", robotRelativeSpeed.getY());
+
     double translationError = distance-desiredDistance;
-    SmartDashboard.putNumber("Translation error", translationError);
     Translation2d translationVector = new Translation2d(-translationPidController.calculate(translationError)+Math.signum(translationError)*translationFF,0);
     translationVector=translationVector.rotateBy(Rotation2d.fromDegrees(tx));
 
     drivetrain.drive(translationVector,0,false,null);
-    
-    /* 
-    double horizontalTranslation = 0;
-    double forBackTranslation = 0;
-    if (limelightShooter.hasTarget()) {
-      double txValue = limelightShooter.getTx();
-      double translationError = 0;
-      if (Math.abs(txValue) < 3) {
-        translationError = txValue - desiredTx;
-      } else {
-        translationError = distance * Math.sin((txValue-desiredTx)*(Math.PI/180));
-      }
-      SmartDashboard.putNumber("Translation Error", translationError);
-      double distanceError = distance - desiredDistance;
-
-      if (Math.abs(translationError) > translationThreshold)
-        horizontalTranslation = translationPidController.calculate(translationError) - Math.signum(translationError) * translationFF;
-
-      if (Math.abs(distanceError) > distanceThreshold)
-        forBackTranslation = distancePidController.calculate(distanceError) - Math.signum(distanceError) * distanceFF;
-      
-    }
-
-    // calculate rotation
-    double rotation = 0;
-    if (Math.abs(rotationError) > rotationThreshold)
-      rotation = rotationPidController.calculate(rotationError) + Math.signum(rotationError) * rotationFF;
-
-
-
-    drivetrain.drive(new Translation2d(-forBackTranslation, -horizontalTranslation), rotation, false, null);
-    */
   }
 
   // Called once the command ends or is interrupted.

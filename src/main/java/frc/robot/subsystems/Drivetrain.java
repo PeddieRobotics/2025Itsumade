@@ -114,6 +114,20 @@ public class Drivetrain extends SubsystemBase {
     public int getPipelineNumber() {
         return pipelineNumber;
     }
+
+    public Translation2d getRobotRelativeTranslation(){
+        Translation2d sum = new Translation2d();
+        for (SwerveModule module: swerveModules){
+            double speed = module.getActualSpeed();
+            double angle = module.getCANCoderRadians();
+            sum=sum.plus(new Translation2d(speed*Math.cos(angle),speed*Math.sin(angle)));
+        }
+        return sum.div(4);
+    }
+
+    public Translation2d getFieldRelativeTranslation(){
+        return getRobotRelativeTranslation().rotateBy(getHeadingAsRotation2d());
+    }
     
     @Override
     public void periodic() {
