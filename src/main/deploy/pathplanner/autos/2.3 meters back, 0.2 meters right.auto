@@ -17,6 +17,12 @@
           }
         },
         {
+          "type": "named",
+          "data": {
+            "name": "SET_TIMER"
+          }
+        },
+        {
           "type": "path",
           "data": {
             "pathName": "0.5 meters forward"

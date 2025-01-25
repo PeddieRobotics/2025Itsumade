@@ -19,6 +19,12 @@
         {
           "type": "named",
           "data": {
+            "name": "SET_TIMER"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
             "name": "ALIGN_TO_REEF"
           }
         }
