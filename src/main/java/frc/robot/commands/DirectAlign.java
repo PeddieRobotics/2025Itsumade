@@ -42,7 +42,7 @@ public class DirectAlign extends Command {
 
   //Mechanism values
   private double tx, distance;
-  private double mechanismResponseTime = .1; //pose lerping constant
+  private double mechanismResponseTime = 0; //pose lerping constant
 
   //Timeout variables
   private int timeoutFrameThreshold = 10;
@@ -58,10 +58,10 @@ public class DirectAlign extends Command {
 
     SmartDashboard.putNumber("Desired Distance", desiredDistance);
     
-    translationP = 0.04;
+    translationP = 0.05;
     translationI = 0;
     translationD = 0;
-    translationFF = 0.02;
+    translationFF = 0.01;
     translationPidController = new PIDController(translationP, translationI , translationD);
 
     SmartDashboard.putNumber("Translation P", translationP);
@@ -72,7 +72,7 @@ public class DirectAlign extends Command {
     rotationP = 0.01;
     rotationI = 0.0;
     rotationD = 0.0;
-    rotationFF = 0.0;
+    rotationFF = 0.01;
     rotationThresholdP = 0.01;
     rotationPidController = new PIDController(rotationP, rotationI, rotationD);
 
@@ -145,6 +145,14 @@ public class DirectAlign extends Command {
       framesNotSeen++;
     }
 
+    //lerp rotation
+    double currentRotation = drivetrain.getHeading() + drivetrain.getRotationalVelocity()*mechanismResponseTime;
+    double rotationError = desiredAngle - currentRotation;
+
+
+    double rotation;
+    rotation = rotationPidController.calculate(rotationError) + Math.signum(rotationError) * rotationFF;
+
     //Translation pose lerping - not 'real' pose lerping, only using component parallel to tx
     Translation2d robotRelativeSpeed = drivetrain.getRobotRelativeTranslation();
     double dx = robotRelativeSpeed.getX() * mechanismResponseTime;
@@ -171,29 +179,38 @@ public class DirectAlign extends Command {
     Translation2d translationVector = new Translation2d(-translationPidController.calculate(translationError)+Math.signum(translationError)*translationFF,0);
     translationVector=translationVector.rotateBy(Rotation2d.fromDegrees(tx));
 
-    //lerp rotation
-    double currentRotation = drivetrain.getHeading();//+ drivetrain.getRotationalVelocity()*mechanismResponseTime;
-    double rotationError = desiredAngle - currentRotation;
+    //horizontal thing
+    double desiredTx = -(desiredAngle - drivetrain.getHeading());
+
+    if (Math.abs(tx) < 3) {
+      translationError = tx - desiredTx;
+    } else {
+      translationError = distance * Math.sin((tx-desiredTx)*(Math.PI/180));
+    }
+
+    double horizontalTranslation = translationPidController.calculate(translationError) - Math.signum(translationError) * translationFF;
+
+    translationVector = translationVector.plus(new Translation2d(0,-horizontalTranslation));
 
 
-    double rotation = 0;
     double farLerp = (currentRotation-minRotationLerp)/(maxRotationLerp-minRotationLerp);
     double closeLerp = 1-farLerp;
     if (Math.abs(rotationError) > rotationThreshold){
       rotation = rotationPidController.calculate(rotationError) + Math.signum(rotationError) * rotationFF;
     
-      /* rotation correction, lerping idea to avoid tag dropout
-      if(Math.signum(rotationError)!=Math.signum(tx)){
+      //*rotation correction, lerping idea to avoid tag dropout
+      if(Math.signum(rotationError)==Math.signum(tx)){
         if(Math.abs(tx)>22.5){
-          rotation = signum(tx)*.1
+          rotation = 0;//Math.signum(tx)*.1
         }else if(minRotationLerp<distance && distance<maxRotationLerp){
-          rotation = closeLerp*rotationPidController.calculate(rotationError) + farLerp*rotationPidController.calculate(tx)
-          if(Math.signum(rotation)!=Math.signum(rotationError)){
+          rotation = closeLerp*rotationPidController.calculate(rotationError) + farLerp*rotationPidController.calculate(tx);
+          rotation += Math.signum(rotation) * rotationFF;
+          if(Math.signum(rotation)==Math.signum(rotationError)){
             rotation = 0;
           }
         }
       }
-      */
+      //*/
     }
 
     drivetrain.drive(translationVector,rotation,false,null);

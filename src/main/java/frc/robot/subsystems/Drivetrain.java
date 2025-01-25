@@ -76,7 +76,7 @@ public class Drivetrain extends SubsystemBase {
     }
 
     public double getRotationalVelocity(){
-        return gyro.getAngularVelocityZWorld().getValueAsDouble();
+        return -gyro.getAngularVelocityZWorld().getValueAsDouble();
     }
     
     public void updateModulePositions() {
