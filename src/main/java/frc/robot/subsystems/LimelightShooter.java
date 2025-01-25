@@ -30,6 +30,9 @@ public class LimelightShooter extends Limelight {
         //SmartDashboard.putNumber("LL results ty", fiducials[0].ty);
         //SmartDashboard.putNumber("LL results ty diff", fiducials[0].ty-getTy());
 
+        SmartDashboard.putNumber("Botpose X", getBotpose().getX());
+        SmartDashboard.putNumber("Botpose Y", getBotpose().getY());
+
         updateRollingAverages();
     }
 }
