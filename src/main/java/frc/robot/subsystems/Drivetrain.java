@@ -74,6 +74,10 @@ public class Drivetrain extends SubsystemBase {
     public double getDegrees(){
         return gyro.getRotation2d().getDegrees(); 
     }
+
+    public double getRotationalVelocity(){
+        return gyro.getAngularVelocityZWorld().getValueAsDouble();
+    }
     
     public void updateModulePositions() {
         for (int i = 0; i < 4; i++)
@@ -159,5 +163,9 @@ public class Drivetrain extends SubsystemBase {
 
         SmartDashboard.putNumber("gyro angle1", getHeading()); 
         SmartDashboard.putNumber("gyro angle2", getDegrees()); 
+
+        Translation2d robotRelativeSpeed = getRobotRelativeTranslation();
+        SmartDashboard.putNumber("robot x speed", robotRelativeSpeed.getX());
+        SmartDashboard.putNumber("robot y speed", robotRelativeSpeed.getY());
     }
 }

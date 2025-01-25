@@ -31,9 +31,14 @@ public class DirectAlign extends Command {
   private double translationP, translationI, translationD, translationFF;
   private double rotationP, rotationI, rotationD, rotationFF;
 
-  //PID setpoints
+  //PID setpoints and deadbands
   private double desiredAngle;
+  private double angleDeadband;
   private double desiredDistance;
+  private double distanceDeadband;
+
+  //Weird rotation lerp idea
+  private double minRotationLerp, maxRotationLerp;
 
   //Mechanism values
   private double tx, distance;
@@ -43,12 +48,6 @@ public class DirectAlign extends Command {
   private int timeoutFrameThreshold = 10;
   private int framesNotSeen;
   
-
-  /**
-   * Creates a new ExampleCommand.
-   *
-   * @param subsystem The subsystem used by this command.
-   */
   public DirectAlign() {
     drivetrain = Drivetrain.getInstance();
     limelightShooter = LimelightShooter.getInstance();
@@ -70,7 +69,7 @@ public class DirectAlign extends Command {
     SmartDashboard.putNumber("Translation D", translationD);
     SmartDashboard.putNumber("Translation FF", translationFF);
 
-    rotationP = 0.027;
+    rotationP = 0.01;
     rotationI = 0.0;
     rotationD = 0.0;
     rotationFF = 0.0;
@@ -91,6 +90,9 @@ public class DirectAlign extends Command {
     SmartDashboard.putNumber("translationThreshold", translationThreshold);
     SmartDashboard.putNumber("distanceThreshold", distanceThreshold);
     SmartDashboard.putNumber("rotationUseLowerPThreshold", rotationUseLowerPThreshold);
+
+    minRotationLerp = 30;
+    maxRotationLerp = 50;
 
     // Use addRequirements() here to declare subsystem dependencies.
     addRequirements(drivetrain);
@@ -130,9 +132,6 @@ public class DirectAlign extends Command {
 
     desiredDistance = SmartDashboard.getNumber("Desired Distance", desiredDistance);
 
-    double rotationError = desiredAngle - drivetrain.getHeading();
-    double desiredTx = -rotationError;
-
     // set PID controllers
     rotationPidController.setPID(rotationP,rotationI,rotationD);
     translationPidController.setPID(translationP, translationI, translationD);
@@ -146,16 +145,58 @@ public class DirectAlign extends Command {
       framesNotSeen++;
     }
 
-    //Translation pose lerping
+    //Translation pose lerping - not 'real' pose lerping, only using component parallel to tx
     Translation2d robotRelativeSpeed = drivetrain.getRobotRelativeTranslation();
-    SmartDashboard.putNumber("robot x speed", robotRelativeSpeed.getX());
-    SmartDashboard.putNumber("robot y speed", robotRelativeSpeed.getY());
+    double dx = robotRelativeSpeed.getX() * mechanismResponseTime;
+    double dy = robotRelativeSpeed.getY() * mechanismResponseTime;
+
+    dx = dx*Math.cos(tx);
+    dy = dy*Math.sin(tx);
+
+    distance = distance - Math.sqrt(dx*dx + dy*dy);
+
+    //does this even work lmao
+    /*recalculate for orthogonal component, real pose lerping (for distance)
+
+    dx = robotRelativeSpeed.getX() * mechanismResponseTime;
+    dy = robotRelativeSpeed.getY() * mechanismResponseTime;
+
+    dx = dx-dx*Math.cos(tx);
+    dy = dy-dy*Math.sin(tx);
+
+    distance = Math.sqrt(dx*dx+dy*dy+distance*distance);
+    */
 
     double translationError = distance-desiredDistance;
     Translation2d translationVector = new Translation2d(-translationPidController.calculate(translationError)+Math.signum(translationError)*translationFF,0);
     translationVector=translationVector.rotateBy(Rotation2d.fromDegrees(tx));
 
-    drivetrain.drive(translationVector,0,false,null);
+    //lerp rotation
+    double currentRotation = drivetrain.getHeading();//+ drivetrain.getRotationalVelocity()*mechanismResponseTime;
+    double rotationError = desiredAngle - currentRotation;
+
+
+    double rotation = 0;
+    double farLerp = (currentRotation-minRotationLerp)/(maxRotationLerp-minRotationLerp);
+    double closeLerp = 1-farLerp;
+    if (Math.abs(rotationError) > rotationThreshold){
+      rotation = rotationPidController.calculate(rotationError) + Math.signum(rotationError) * rotationFF;
+    
+      /* rotation correction, lerping idea to avoid tag dropout
+      if(Math.signum(rotationError)!=Math.signum(tx)){
+        if(Math.abs(tx)>22.5){
+          rotation = signum(tx)*.1
+        }else if(minRotationLerp<distance && distance<maxRotationLerp){
+          rotation = closeLerp*rotationPidController.calculate(rotationError) + farLerp*rotationPidController.calculate(tx)
+          if(Math.signum(rotation)!=Math.signum(rotationError)){
+            rotation = 0;
+          }
+        }
+      }
+      */
+    }
+
+    drivetrain.drive(translationVector,rotation,false,null);
   }
 
   // Called once the command ends or is interrupted.
