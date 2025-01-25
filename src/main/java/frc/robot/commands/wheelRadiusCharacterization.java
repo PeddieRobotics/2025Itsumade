@@ -13,6 +13,7 @@ import java.util.Arrays;
 
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 
@@ -51,36 +52,36 @@ public class WheelRadiusCharacterization extends Command {
   // Called when the command is initially scheduled.
   @Override
   public void initialize() {
-    initialGyro = drivetrain.getDegrees();
+    initialGyro = drivetrain.getDegrees() * Math.PI / 180;
     initialPositions = Arrays.copyOf(drivetrain.getSwerveModuleRadianPosition(), 4);
   }
 
   // Called every time the scheduler runs while the command is scheduled.
   @Override
   public void execute() {
-    currentGyro = drivetrain.getDegrees();
+    averageDeltaPositions = 0;
+    currentGyro = drivetrain.getDegrees() * Math.PI / 180;
     deltaGyro = currentGyro - initialGyro;
     SmartDashboard.putNumber("deltaGyro", deltaGyro);
 
-    drivetrain.drive(new Translation2d(0,0), 0.5, false, null);
+    drivetrain.drive(new Translation2d(0,0), 1, false, null);
 
 
     currentPositions = drivetrain.getSwerveModuleRadianPosition();
     SmartDashboard.putNumber("current module 0", currentPositions[0]);
-    SmartDashboard.putNumber("current module 1", currentPositions[1]);
-    SmartDashboard.putNumber("current module 2", currentPositions[2]);
-    SmartDashboard.putNumber("current module 3", currentPositions[3]);
     SmartDashboard.putNumber("initial module 0", initialPositions[0]);
-    SmartDashboard.putNumber("initla module 1", initialPositions[1]);
-    SmartDashboard.putNumber("initla module 2", initialPositions[2]);
-    SmartDashboard.putNumber("inital module 3", initialPositions[3]);
+    SmartDashboard.putNumber("delta module 0", currentPositions[0]-initialPositions[0]);
+    SmartDashboard.putNumber("delta module 1", currentPositions[1]-initialPositions[1]);
+    SmartDashboard.putNumber("delta module 2", currentPositions[2]-initialPositions[2]);
+    SmartDashboard.putNumber("delta module 3", currentPositions[3]-initialPositions[3]);
 
     for(int i = 0; i < 4; i++){
-      averageDeltaPositions += (currentPositions[i] - initialPositions[i]);
+      averageDeltaPositions += Math.abs((currentPositions[i] - initialPositions[i]));
     }
     averageDeltaPositions /= 4;
 
     effectiveWheelRadius = deltaGyro * drivebaseRadius / averageDeltaPositions;
+    effectiveWheelRadius = Units.metersToInches(effectiveWheelRadius);
 
     logger.deltaGyro.append(deltaGyro);
     logger.averageDeltaPositions.append(averageDeltaPositions);

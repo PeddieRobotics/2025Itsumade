@@ -12,7 +12,7 @@ public class Constants {
         public final static double kRriveMotorCurrentLimit = 50;
         public final static double kSteerMotorGearRatio = 150.0 / 7.0;
         public final static double kDriveMotorGearRatio = 6.12;
-        public final static double kWheelDiameterIn = 3.82;
+        public final static double kWheelDiameterIn = 3.79;
         
         // motor rotation to distance traveled by wheel/robot conversion factor
         public static final double kRotorToDistanceRatio = (Units.inchesToMeters(kWheelDiameterIn) * Math.PI) / kDriveMotorGearRatio;

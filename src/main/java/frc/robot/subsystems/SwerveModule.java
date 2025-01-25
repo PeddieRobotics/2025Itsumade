@@ -116,7 +116,7 @@ public class SwerveModule extends SubsystemBase {
 	}
 
 	public double getPositionRadians(){
-		return drive.getPosition();
+		return drive.getPosition() / DriveConstants.kDriveMotorGearRatio * 2 * Math.PI;
 	}
 
 	public SwerveModuleState getDesiredState() {
