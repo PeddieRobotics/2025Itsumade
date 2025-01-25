@@ -10,6 +10,7 @@ import edu.wpi.first.math.util.Units;
 public class Constants {
     public class DriveConstants {
         public final static double kRriveMotorCurrentLimit = 50;
+        public final static double kRriveMotorStatorCurrentLimit = 70;
         public final static double kSteerMotorGearRatio = 150.0 / 7.0;
         public final static double kDriveMotorGearRatio = 6.12;
         public final static double kWheelDiameterIn = 3.79;

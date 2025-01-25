@@ -169,6 +169,8 @@ public class Drivetrain extends SubsystemBase {
     
     @Override
     public void periodic() {
+        SmartDashboard.putNumber("X acceleration", gyro.getAccelerationX().getValueAsDouble());
+        SmartDashboard.putNumber("Y acceleration", gyro.getAccelerationY().getValueAsDouble());
         double pov = OI.getInstance().getDPadPOV();
         if (pov == 90)
             pipelineNumber = 1;

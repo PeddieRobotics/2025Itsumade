@@ -101,6 +101,13 @@ public class Kraken {
         talon.getConfigurator().apply(config);
     }
 
+    public void setStatorCurrentLimit(double currentLimit) {
+        config.CurrentLimits.StatorCurrentLimitEnable = true;
+        config.CurrentLimits.StatorCurrentLimit = currentLimit;
+
+        talon.getConfigurator().apply(config);
+    }
+
     public void setForwardTorqueCurrentLimit(double currentLimit) {
         config.TorqueCurrent.PeakForwardTorqueCurrent = currentLimit;
         talon.getConfigurator().apply(config);

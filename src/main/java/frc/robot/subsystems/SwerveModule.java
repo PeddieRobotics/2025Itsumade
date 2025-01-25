@@ -48,6 +48,7 @@ public class SwerveModule extends SubsystemBase {
 	  steer.setInverted(true);
 	  
 	  drive.setSupplyCurrentLimit(DriveConstants.kRriveMotorCurrentLimit);
+	//   drive.setStatorCurrentLimit(DriveConstants.kRriveMotorStatorCurrentLimit);
 	  steer.setSupplyCurrentLimit(DriveConstants.kRriveMotorCurrentLimit);
 	  
 	  drive.setClosedLoopRampRate(0.1);
