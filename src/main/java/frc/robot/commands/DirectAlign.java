@@ -26,23 +26,24 @@ public class DirectAlign extends Command {
 
   //PID controllers
   private PIDController rotationPidController, translationPidController;
-  private double rotationUseLowerPThreshold, rotationThresholdP;
-  private double translationThreshold, rotationThreshold, distanceThreshold;
   private double translationP, translationI, translationD, translationFF;
   private double rotationP, rotationI, rotationD, rotationFF;
 
   //PID setpoints and deadbands
   private double desiredAngle;
-  private double angleDeadband;
   private double desiredDistance;
-  private double distanceDeadband;
+
+  //thresholds
+  private double angleThreshold = 2;
+  private double distanceThreshold = 1;
+  private double txThreshold = 1;
 
   //Weird rotation lerp idea
   private double minRotationLerp, maxRotationLerp;
 
   //Mechanism values
   private double tx, distance;
-  private double mechanismResponseTime = 0; //pose lerping constant
+  private double mechanismResponseTime = 0.1; //pose lerping constant
 
   //Timeout variables
   private int timeoutFrameThreshold = 10;
@@ -58,10 +59,10 @@ public class DirectAlign extends Command {
 
     SmartDashboard.putNumber("Desired Distance", desiredDistance);
     
-    translationP = 0.05;
+    translationP = 0.043;
     translationI = 0;
     translationD = 0;
-    translationFF = 0.01;
+    translationFF = 0;
     translationPidController = new PIDController(translationP, translationI , translationD);
 
     SmartDashboard.putNumber("Translation P", translationP);
@@ -69,27 +70,16 @@ public class DirectAlign extends Command {
     SmartDashboard.putNumber("Translation D", translationD);
     SmartDashboard.putNumber("Translation FF", translationFF);
 
-    rotationP = 0.01;
+    rotationP = 0.02;
     rotationI = 0.0;
     rotationD = 0.0;
-    rotationFF = 0.01;
-    rotationThresholdP = 0.01;
+    rotationFF = 0;
     rotationPidController = new PIDController(rotationP, rotationI, rotationD);
 
     SmartDashboard.putNumber("Rotation P", rotationP);
-    SmartDashboard.putNumber("Rotation Threshold P", rotationThresholdP);
     SmartDashboard.putNumber("Rotation I", rotationI);
     SmartDashboard.putNumber("Rotation D", rotationD);
     SmartDashboard.putNumber("Rotation FF", rotationFF);
-
-    rotationThreshold = 1;
-    translationThreshold = 1;
-    rotationUseLowerPThreshold = 1.5;
-    
-    SmartDashboard.putNumber("rotationThreshold", rotationThreshold);
-    SmartDashboard.putNumber("translationThreshold", translationThreshold);
-    SmartDashboard.putNumber("distanceThreshold", distanceThreshold);
-    SmartDashboard.putNumber("rotationUseLowerPThreshold", rotationUseLowerPThreshold);
 
     minRotationLerp = 30;
     maxRotationLerp = 50;
@@ -121,13 +111,10 @@ public class DirectAlign extends Command {
     translationFF = SmartDashboard.getNumber("Translation FF", translationFF);
 
     rotationP = SmartDashboard.getNumber("Rotation P", rotationP);
-    rotationThresholdP = SmartDashboard.getNumber("Rotation Threshold P", rotationThresholdP);
     rotationI = SmartDashboard.getNumber("Rotation I", rotationI);
     rotationD = SmartDashboard.getNumber("Rotation D", rotationD);
     rotationFF = SmartDashboard.getNumber("Rotation FF", rotationFF);
 
-    rotationThreshold = SmartDashboard.getNumber("rotationThreshold", rotationThreshold);
-    translationThreshold = SmartDashboard.getNumber("translationThreshold", translationThreshold);
     distanceThreshold = SmartDashboard.getNumber("distanceThreshold", distanceThreshold);
 
     desiredDistance = SmartDashboard.getNumber("Desired Distance", desiredDistance);
@@ -195,7 +182,7 @@ public class DirectAlign extends Command {
 
     double farLerp = (currentRotation-minRotationLerp)/(maxRotationLerp-minRotationLerp);
     double closeLerp = 1-farLerp;
-    if (Math.abs(rotationError) > rotationThreshold){
+    if (Math.abs(rotationError) > angleThreshold){
       rotation = rotationPidController.calculate(rotationError) + Math.signum(rotationError) * rotationFF;
     
       //*rotation correction, lerping idea to avoid tag dropout
@@ -211,6 +198,18 @@ public class DirectAlign extends Command {
         }
       }
       //*/
+    }
+
+    if(Math.abs(txThreshold-tx)<txThreshold && Math.abs(distance-desiredDistance)<distanceThreshold){
+      translationVector=new Translation2d();
+    } else if(Math.abs(distance-desiredDistance)<7){
+      translationVector=translationVector.times(.7);
+    }
+
+    if(Math.abs(rotationError)<angleThreshold){
+      rotation=0;
+    } else if(Math.abs(rotationError)<6){
+      rotation*=.7;
     }
 
     drivetrain.drive(translationVector,rotation,false,null);
