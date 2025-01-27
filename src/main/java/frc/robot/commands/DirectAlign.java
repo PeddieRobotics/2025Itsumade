@@ -43,7 +43,7 @@ public class DirectAlign extends Command {
 
   //Mechanism values
   private double tx, distance;
-  private double mechanismResponseTime = 0.1; //pose lerping constant
+  private double mechanismResponseTime = 0; //pose lerping constant
 
   //Timeout variables
   private int timeoutFrameThreshold = 10;
@@ -54,12 +54,12 @@ public class DirectAlign extends Command {
     limelightShooter = LimelightShooter.getInstance();
 
     desiredAngle = 0;
-    desiredDistance = 25.0;
+    desiredDistance = 17.0;
     framesNotSeen = 0;
 
     SmartDashboard.putNumber("Desired Distance", desiredDistance);
     
-    translationP = 0.043;
+    translationP = 0.04;
     translationI = 0;
     translationD = 0;
     translationFF = 0;
@@ -177,7 +177,7 @@ public class DirectAlign extends Command {
 
     double horizontalTranslation = translationPidController.calculate(translationError) - Math.signum(translationError) * translationFF;
 
-    translationVector = translationVector.plus(new Translation2d(0,-horizontalTranslation));
+    translationVector = translationVector.plus(new Translation2d(0,-horizontalTranslation).times(1.1));
 
 
     double farLerp = (currentRotation-minRotationLerp)/(maxRotationLerp-minRotationLerp);
@@ -190,7 +190,7 @@ public class DirectAlign extends Command {
         if(Math.abs(tx)>22.5){
           rotation = 0;//Math.signum(tx)*.1
         }else if(minRotationLerp<distance && distance<maxRotationLerp){
-          rotation = closeLerp*rotationPidController.calculate(rotationError) + farLerp*rotationPidController.calculate(tx);
+          rotation = 12*farLerp*rotationPidController.calculate(tx); //0*closeLerp*rotationPidController.calculate(rotationError) + 
           rotation += Math.signum(rotation) * rotationFF;
           if(Math.signum(rotation)==Math.signum(rotationError)){
             rotation = 0;
@@ -202,7 +202,7 @@ public class DirectAlign extends Command {
 
     if(Math.abs(txThreshold-tx)<txThreshold && Math.abs(distance-desiredDistance)<distanceThreshold){
       translationVector=new Translation2d();
-    } else if(Math.abs(distance-desiredDistance)<7){
+    } else if(Math.abs(distance-desiredDistance)<20){
       translationVector=translationVector.times(.7);
     }
 
@@ -211,6 +211,8 @@ public class DirectAlign extends Command {
     } else if(Math.abs(rotationError)<6){
       rotation*=.7;
     }
+
+    SmartDashboard.putBoolean("Bad angle split", Math.signum(rotationError)==Math.signum(tx));
 
     drivetrain.drive(translationVector,rotation,false,null);
   }
