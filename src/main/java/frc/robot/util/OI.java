@@ -34,8 +34,8 @@ public class OI {
         Trigger SquareButton = new JoystickButton(controller, PS4Controller.Button.kSquare.value);
         SquareButton.whileTrue(new AlignToReef(false));
 
-        // Trigger xButton = new JoystickButton(controller, PS4Controller.Button.kCross.value);
-        // xButton.toggleOnTrue(new AlignToReef(true));
+        Trigger xButton = new JoystickButton(controller, PS4Controller.Button.kCross.value);
+        xButton.whileTrue(new AlignToReefField(false));
     }
     
     public double getForward() {

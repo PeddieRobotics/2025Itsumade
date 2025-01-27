@@ -29,7 +29,7 @@ public class AlignToReefField extends Command {
   private double desiredDistance;
   private double txValue, rotationError, distanceError;
   private double startTime;
-  private Translation2d translation;
+  private Translation2d asdfadsfadfTranslation;
   private boolean isAuto;
   
   private Translation2d forBackUnitVec;
@@ -56,7 +56,7 @@ public class AlignToReefField extends Command {
 
     SmartDashboard.putNumber("Desired Distance", desiredDistance);
 
-    distanceP = 0.044;
+    distanceP = 0.034;
     distanceI = 0;
     distanceD = 0.003;
     distanceFF = 0;
@@ -68,7 +68,7 @@ public class AlignToReefField extends Command {
     SmartDashboard.putNumber("Distance D", distanceD);
     SmartDashboard.putNumber("Distance FF", distanceFF);
     
-    translationP = 0.07;
+    translationP = 0.05;
     translationI = 0;
     translationD = 0;
     translationFF = 0.001;
@@ -101,7 +101,7 @@ public class AlignToReefField extends Command {
     SmartDashboard.putNumber("distanceThreshold", distanceThreshold);
     SmartDashboard.putNumber("rotationUseLowerPThreshold", rotationUseLowerPThreshold);
 
-    translation = new Translation2d(0, 0);
+    asdfadsfadfTranslation = new Translation2d(0, 0);
 
     addRequirements(drivetrain);
   }
@@ -130,7 +130,7 @@ public class AlignToReefField extends Command {
         -Math.sin(theta), Math.cos(theta)
     );
 
-    translation = new Translation2d(0, 0);
+    asdfadsfadfTranslation = new Translation2d(0, 0);
     startTime = Timer.getFPGATimestamp();
   }
 
@@ -196,20 +196,20 @@ public class AlignToReefField extends Command {
 
       double horizontalTranslation = 0, forBackTranslation = 0;
       if (Math.abs(translationError) > translationThreshold)
-        horizontalTranslation = translationPidController.calculate(translationError) + Math.signum(translationError) * translationFF;
+        horizontalTranslation = translationPidController.calculate(translationError) - Math.signum(translationError) * translationFF;
 
       if (Math.abs(distanceError) > distanceThreshold)
-        forBackTranslation = distancePidController.calculate(distanceError) + Math.signum(distanceError) * distanceFF;
+        forBackTranslation = distancePidController.calculate(distanceError) - Math.signum(distanceError) * distanceFF;
 
-      Translation2d horizontalVector = horizontalUnitVec.times(horizontalTranslation);
-      Translation2d forBackVector = forBackUnitVec.times(forBackTranslation);
-      translation = horizontalVector.plus(forBackVector);
+      Translation2d horizontalVector = horizontalUnitVec.times(-horizontalTranslation);
+      Translation2d forBackVector = forBackUnitVec.times(-forBackTranslation);
+      asdfadsfadfTranslation = horizontalVector.plus(forBackVector);
 
       logger.cmdTranslationEntry.append(translationError);
       logger.cmdDistanceEntry.append(distanceError);
     }
-    else
-      translation = new Translation2d(translation.getX() / 2, translation.getY() / 2);
+    // else
+    //   translation = new Translation2d(translation.getX() / 2, translation.getY() / 2);
 
     SmartDashboard.putNumber("Rotation Error", rotationError);
     logger.cmdRotationEntry.append(rotationError);
@@ -219,11 +219,11 @@ public class AlignToReefField extends Command {
     if (Math.abs(rotationError) > rotationThreshold)
       rotation = rotationPidController.calculate(rotationError) + Math.signum(rotationError) * rotationFF;
 
-    logger.cmdCommandXEntry.append(translation.getX());
-    logger.cmdCommandYEntry.append(translation.getY());
+    logger.cmdCommandXEntry.append(asdfadsfadfTranslation.getX());
+    logger.cmdCommandYEntry.append(asdfadsfadfTranslation.getY());
     logger.cmdCommandRotationEntry.append(rotation);
 
-    drivetrain.drive(translation, rotation, true, null);
+    drivetrain.drive(asdfadsfadfTranslation, rotation, true, null);
   }
 
   // Called once the command ends or is interrupted.
