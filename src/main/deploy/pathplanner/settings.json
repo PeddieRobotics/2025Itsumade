@@ -9,8 +9,8 @@
   "autoFolders": [
     "Cage Starts",
     "Mid Start",
-    "Rig Starts",
-    "Normal Starts"
+    "Normal Starts",
+    "Jig Starts"
   ],
   "defaultMaxVel": 3.5,
   "defaultMaxAccel": 5.0,

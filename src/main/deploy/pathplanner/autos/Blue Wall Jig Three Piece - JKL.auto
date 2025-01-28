@@ -38,6 +38,6 @@
     }
   },
   "resetOdom": true,
-  "folder": "Rig Starts",
+  "folder": "Jig Starts",
   "choreoAuto": false
 }
