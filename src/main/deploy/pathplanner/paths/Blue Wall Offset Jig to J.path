@@ -3,29 +3,29 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 7.75,
-        "y": 3.3
+        "x": 6.976,
+        "y": 5.8
       },
       "prevControl": null,
       "nextControl": {
-        "x": 6.570469572685663,
-        "y": 3.081690577685957
+        "x": 6.3834005365049755,
+        "y": 5.640784163127856
       },
       "isLocked": false,
-      "linkedName": "RedTape"
+      "linkedName": "RigOffsetBlueWall"
     },
     {
       "anchor": {
-        "x": 5.0,
-        "y": 2.6779605263157897
+        "x": 5.0115,
+        "y": 5.3315
       },
       "prevControl": {
-        "x": 6.059179819405884,
-        "y": 2.950102471195283
+        "x": 5.7419693130279565,
+        "y": 5.494851573833461
       },
       "nextControl": null,
       "isLocked": false,
-      "linkedName": "EReef"
+      "linkedName": "JReef"
     }
   ],
   "rotationTargets": [],
@@ -42,13 +42,13 @@
   },
   "goalEndState": {
     "velocity": 0,
-    "rotation": -59.42077312751098
+    "rotation": 60.39554925399499
   },
   "reversed": false,
-  "folder": "Normal Starts",
+  "folder": "Jig Start",
   "idealStartingState": {
     "velocity": 0,
-    "rotation": -90.15383516463184
+    "rotation": 59.99999999999999
   },
   "useDefaultConstraints": true
 }

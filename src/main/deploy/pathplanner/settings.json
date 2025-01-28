@@ -3,11 +3,14 @@
   "robotLength": 0.883,
   "holonomicMode": true,
   "pathFolders": [
-    "Starts"
+    "Jig Start",
+    "Normal Starts"
   ],
   "autoFolders": [
     "Cage Starts",
-    "Mid Start"
+    "Mid Start",
+    "Rig Starts",
+    "Normal Starts"
   ],
   "defaultMaxVel": 3.5,
   "defaultMaxAccel": 5.0,
