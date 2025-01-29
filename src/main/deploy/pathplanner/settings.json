@@ -12,7 +12,7 @@
     "Normal Starts",
     "Jig Starts"
   ],
-  "defaultMaxVel": 3.5,
+  "defaultMaxVel": 1.0,
   "defaultMaxAccel": 5.0,
   "defaultMaxAngVel": 540.0,
   "defaultMaxAngAccel": 720.0,
