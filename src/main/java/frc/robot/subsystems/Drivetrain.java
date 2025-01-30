@@ -1,7 +1,8 @@
 package frc.robot.subsystems;
 
 import com.ctre.phoenix6.hardware.Pigeon2;
-
+import edu.wpi.first.math.Matrix;
+import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -9,9 +10,14 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.math.numbers.N1;
+import edu.wpi.first.math.numbers.N3;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.util.Constants.DriveConstants;
+import frc.robot.util.LimelightHelpers;
 import frc.robot.util.OI;
 import frc.robot.util.RobotMap;
 
@@ -31,6 +37,11 @@ public class Drivetrain extends SubsystemBase {
 
     private SwerveDrivePoseEstimator odometry;
 
+    private LimelightShooter limelightShooter;
+
+    private boolean isForcingCalibration;
+    private boolean useMegaTag = true;
+
     public static Drivetrain getInstance() {
         if (instance == null)
             instance = new Drivetrain();
@@ -38,6 +49,9 @@ public class Drivetrain extends SubsystemBase {
     }
     
     public Drivetrain() {
+
+        SmartDashboard.putBoolean("isForcingCalibration", isForcingCalibration);
+        SmartDashboard.putBoolean("useMegaTag", useMegaTag);
         frontLeft = new SwerveModule(RobotMap.CANIVORE_NAME, RobotMap.FRONT_LEFT_MODULE_DRIVE_ID,
                     RobotMap.FRONT_LEFT_MODULE_TURN_ID, RobotMap.FRONT_LEFT_MODULE_CANCODER_ID, DriveConstants.kFrontLeftCancoderOffset);
         frontRight = new SwerveModule(RobotMap.CANIVORE_NAME, RobotMap.FRONT_RIGHT_MODULE_DRIVE_ID,
@@ -63,6 +77,11 @@ public class Drivetrain extends SubsystemBase {
         odometry = new SwerveDrivePoseEstimator(DriveConstants.kinematics, getHeadingAsRotation2d(), positions, new Pose2d());
 
         pipelineNumber = 0;
+
+        limelightShooter = LimelightShooter.getInstance();
+
+        isForcingCalibration = false;
+        
     }
     
     public void resetGyro() {
@@ -116,6 +135,18 @@ public class Drivetrain extends SubsystemBase {
 
     public void updateOdometry(){
         odometry.update(getHeadingAsRotation2d(), positions);
+
+         if(DriverStation.isAutonomous()){
+            if (isForcingCalibration) {
+                limelightShooter.checkForAprilTagUpdates(odometry);
+            }
+        }
+        else{
+            if (useMegaTag || isForcingCalibration) {
+                limelightShooter.checkForAprilTagUpdates(odometry);
+                isForcingCalibration = false;
+            }
+        }
     }
     
     // in radians/s
@@ -150,11 +181,31 @@ public class Drivetrain extends SubsystemBase {
     
     @Override
     public void periodic() {
+
+        SmartDashboard.getBoolean("isForcingCalibration", isForcingCalibration);
+        SmartDashboard.getBoolean("useMegaTag", useMegaTag);
+
         double pov = OI.getInstance().getDPadPOV();
         if (pov == 90)
             pipelineNumber = 1;
         else if (pov == 270)
             pipelineNumber = 0;
+
+        if (limelightShooter.getTagsSeen() >= 2 && (useMegaTag || isForcingCalibration)) {
+            Matrix<N3, N1> visionStdDevs = VecBuilder.fill(
+                isForcingCalibration ? 0.0001 : 1,
+                isForcingCalibration ? 0.0001 : 1,
+                isForcingCalibration ? 0.0001 : 30
+            );
+            odometry.setVisionMeasurementStdDevs(visionStdDevs);
+
+            // odometry set devs
+            double pl = LimelightHelpers.getLatency_Pipeline(limelightShooter.getName());
+            double cl = LimelightHelpers.getLatency_Capture(limelightShooter.getName());
+            
+            double timestampLatencyComp = Timer.getFPGATimestamp() - (pl/1000.0) - (cl/1000.0);
+            odometry.addVisionMeasurement(limelightShooter.getBotpose(), timestampLatencyComp);
+        }
 
         updateModulePositions();
         updateOdometry();

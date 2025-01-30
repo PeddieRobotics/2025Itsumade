@@ -5,6 +5,12 @@
     "data": {
       "commands": [
         {
+          "type": "named",
+          "data": {
+            "name": "REGISTER_START_TIME"
+          }
+        },
+        {
           "type": "path",
           "data": {
             "pathName": "Red Wall to E"
@@ -32,6 +38,12 @@
           "type": "path",
           "data": {
             "pathName": "HP to D"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "REGISTER_END_TIME"
           }
         }
       ]
