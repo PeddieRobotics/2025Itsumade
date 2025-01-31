@@ -143,8 +143,8 @@ public abstract class Limelight extends SubsystemBase {
         return LimelightHelpers.getNeuralClassID(name);
     }
 
-    public int getTagsSeen() {
-        return LimelightHelpers.getNumberOfAprilTagsSeen(name);
+    public int getNumberOfTagsSeen() {
+        return LimelightHelpers.getLatestResults(name).targets_Fiducials.length;
     }
 
     public boolean hasTarget() {
@@ -237,7 +237,7 @@ public abstract class Limelight extends SubsystemBase {
     }
 
     public void checkForAprilTagUpdates(SwerveDrivePoseEstimator odometry) {
-        int tagsSeen = LimelightHelpers.getNumberOfAprilTagsSeen(name);
+        int tagsSeen = getNumberOfTagsSeen();
         //IMPORTANT:still has safe guard preventing the use of update vision if it is outside a half meter range, delete or change 
         //condition to furhter enable checkforapriltag updates 
         

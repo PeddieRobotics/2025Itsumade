@@ -198,7 +198,7 @@ public class Drivetrain extends SubsystemBase {
         else if (pov == 270)
             pipelineNumber = 0;
 
-        if (limelightShooter.getTagsSeen() >= 2
+        if (limelightShooter.getNumberOfTagsSeen() >= 2
             // && (useMegaTag || isForcingCalibration)
         ) {
             Matrix<N3, N1> visionStdDevs = VecBuilder.fill(
@@ -215,9 +215,10 @@ public class Drivetrain extends SubsystemBase {
             double timestampLatencyComp = Timer.getFPGATimestamp() - (pl/1000.0) - (cl/1000.0);
             Pose2d botpose = limelightShooter.getBotpose();
 
-            botposePose.setRobotPose(limelightShooter.getBotpose());
             odometry.addVisionMeasurement(botpose, timestampLatencyComp);
         }
+        SmartDashboard.putNumber("number tags seen", limelightShooter.getNumberOfTagsSeen());
+        botposePose.setRobotPose(limelightShooter.getBotpose());
         odometryPose.setRobotPose(odometry.getEstimatedPosition());
             
 
