@@ -217,7 +217,7 @@ public class Drivetrain extends SubsystemBase {
 
             odometry.addVisionMeasurement(botpose, timestampLatencyComp);
         }
-        SmartDashboard.putNumber("number tags seen", limelightShooter.getNumberOfTagsSeen());
+
         botposePose.setRobotPose(limelightShooter.getBotpose());
         odometryPose.setRobotPose(odometry.getEstimatedPosition());
             

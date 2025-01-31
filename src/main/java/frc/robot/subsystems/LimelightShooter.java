@@ -32,6 +32,7 @@ public class LimelightShooter extends Limelight {
 
     @Override
     public void periodic() {
+        SmartDashboard.putNumber("LL number tags", getNumberOfTagsSeen());
         SmartDashboard.putNumber("LL Distance", getDistance());
         SmartDashboard.putNumber("LL Average Distance", getFilteredDistance());
         SmartDashboard.putNumber("LL ty", getTy());

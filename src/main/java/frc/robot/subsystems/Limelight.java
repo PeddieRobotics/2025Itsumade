@@ -144,7 +144,7 @@ public abstract class Limelight extends SubsystemBase {
     }
 
     public int getNumberOfTagsSeen() {
-        return LimelightHelpers.getLatestResults(name).targets_Fiducials.length;
+        return (int) LimelightHelpers.getBotPose_wpiBlue(name)[7];
     }
 
     public boolean hasTarget() {
