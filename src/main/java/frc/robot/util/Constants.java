@@ -66,8 +66,10 @@ public class Constants {
             // public static final double kFF = 0.0;
         }
         
-        public static final double kTrackWidth = 2;
-        public static final double kWheelBase = 2;
+        public static final double kTrackWidth = Units.inchesToMeters(25.75);
+        public static final double kWheelBase = Units.inchesToMeters(22.75);
+
+        public static final double kBaseRadius = Math.sqrt(Math.pow(kTrackWidth, 2) + Math.pow(kWheelBase, 2)) / 2;
         
         public static final Translation2d[] kSwerveModuleLocations = {
             new Translation2d(kWheelBase / 2.0, kTrackWidth / 2.0),
