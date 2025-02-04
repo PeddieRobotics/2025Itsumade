@@ -113,16 +113,13 @@ public class Drivetrain extends SubsystemBase {
             robotRelativeSpeeds = ChassisSpeeds.fromFieldRelativeSpeeds(fieldRelativeSpeeds, getHeadingAsRotation2d());
 
         // orbit accel skid limit :)
-        // Translation2d desiredAccel = new
-        // Translation2d(robotRelativeSpeeds.vxMetersPerSecond,
-        // robotRelativeSpeeds.vyMetersPerSecond).minus(getRobotRelativeTranslation());
-        // if (desiredAccel.getNorm() > skidAccelLimit) {
-        // desiredAccel = desiredAccel.times(skidAccelLimit / desiredAccel.getNorm());
-        // Translation2d newTranslation =
-        // getRobotRelativeTranslation().plus(desiredAccel);
-        // robotRelativeSpeeds = new ChassisSpeeds(newTranslation.getX(),
-        // newTranslation.getY(), robotRelativeSpeeds.omegaRadiansPerSecond);
-        // }
+        Translation2d desiredAccel = new Translation2d(robotRelativeSpeeds.vxMetersPerSecond, robotRelativeSpeeds.vyMetersPerSecond).minus(getRobotRelativeTranslation());
+        if (desiredAccel.getNorm() > skidAccelLimit) {
+        desiredAccel = desiredAccel.times(skidAccelLimit / desiredAccel.getNorm());
+        Translation2d newTranslation = getRobotRelativeTranslation().plus(desiredAccel);
+        robotRelativeSpeeds = new ChassisSpeeds(newTranslation.getX(),
+        newTranslation.getY(), robotRelativeSpeeds.omegaRadiansPerSecond);
+        }
 
         SmartDashboard.putNumber("rotation thingy", rotation);
         SmartDashboard.putNumber("rotation speed", robotRelativeSpeeds.omegaRadiansPerSecond);
@@ -162,52 +159,56 @@ public class Drivetrain extends SubsystemBase {
         double currentRotationalVelocity = getRotationalVelocity();
         ArrayList<Double> vectorX = new ArrayList<Double>();
         ArrayList<Double> vectorY = new ArrayList<Double>();
-        double tangentialVelocity = currentRotationalVelocity * DriveConstants.kBaseRadius;
+        double tangentialVelocity = -currentRotationalVelocity * DriveConstants.kBaseRadius;
+        SmartDashboard.putNumber("Tangential Velocity", tangentialVelocity);
         double times = 1;
 
-        SmartDashboard.putData("Skid Rotation", new Sendable() {
-            @Override
-            public void initSendable(SendableBuilder builder) {
-                builder.setSmartDashboardType("SwerveDrive");
-                double rx, ry;
+        // SmartDashboard.putData("Skid Rotation", new Sendable() {
+        //     @Override
+        //     public void initSendable(SendableBuilder builder) {
+        //         builder.setSmartDashboardType("SwerveDrive");
+        //         double rx, ry;
 
-                rx = tangentialVelocity * Math.cos(2.41797);// +.72
-                ry = tangentialVelocity * Math.sin(2.41797);
+        //         rx = tangentialVelocity * Math.cos(2.41797);// +.72
+        //         ry = tangentialVelocity * Math.sin(2.41797);
 
-                builder.addDoubleProperty("Front Left Angle", () -> frontLeft.getCANCoderRadians(), null);
-                builder.addDoubleProperty("Front Left Velocity", () -> frontLeft.getActualSpeed(), null);
+        //         builder.addDoubleProperty("Front Left Angle", () -> frontLeft.getCANCoderRadians(), null);
+        //         builder.addDoubleProperty("Front Left Velocity", () -> frontLeft.getActualSpeed(), null);
 
-                builder.addDoubleProperty("Front Right Angle", () -> frontRight.getCANCoderRadians(), null);
-                builder.addDoubleProperty("Front Right Velocity", () -> frontRight.getActualSpeed(), null);
+        //         builder.addDoubleProperty("Front Right Angle", () -> frontRight.getCANCoderRadians(), null);
+        //         builder.addDoubleProperty("Front Right Velocity", () -> frontRight.getActualSpeed(), null);
 
-                builder.addDoubleProperty("Back Left Angle", () -> backLeft.getCANCoderRadians(), null);
-                builder.addDoubleProperty("Back Left Velocity", () -> backLeft.getActualSpeed(), null);
+        //         builder.addDoubleProperty("Back Left Angle", () -> backLeft.getCANCoderRadians(), null);
+        //         builder.addDoubleProperty("Back Left Velocity", () -> backLeft.getActualSpeed(), null);
 
-                builder.addDoubleProperty("Back Right Angle", () -> backRight.getCANCoderRadians(), null);
-                builder.addDoubleProperty("Back Right Velocity", () -> backRight.getActualSpeed(), null);
+        //         builder.addDoubleProperty("Back Right Angle", () -> backRight.getCANCoderRadians(), null);
+        //         builder.addDoubleProperty("Back Right Velocity", () -> backRight.getActualSpeed(), null);
 
-                builder.addDoubleProperty("Robot Angle", () -> getHeadingAsRotation2d().getRadians(), null);
-            }
-        });
+        //         builder.addDoubleProperty("Robot Angle", () -> getHeadingAsRotation2d().getRadians(), null);
+        //     }
+        // });
 
         for (SwerveModule module : swerveModules) {
             double x = module.getActualSpeed() * Math.cos(module.getCANCoderRadians());
             double y = module.getActualSpeed() * Math.sin(module.getCANCoderRadians());
             double rx;
             double ry;
+            
+            //2.41797
+            double rotationAngleSkidThing =-0.7236;
 
             if (times == 1) {
-                rx = tangentialVelocity * Math.cos(2.41797);// +.72
-                ry = tangentialVelocity * Math.sin(2.41797);
+                rx = tangentialVelocity * Math.cos(rotationAngleSkidThing);//
+                ry = tangentialVelocity * Math.sin(rotationAngleSkidThing);
             } else if (times == 2) {
-                rx = tangentialVelocity * Math.cos(-2.41797);// -2.41797
-                ry = tangentialVelocity * Math.sin(-2.41797);
+                rx = tangentialVelocity * Math.cos(Math.PI - rotationAngleSkidThing);//.
+                ry = tangentialVelocity * Math.sin(Math.PI - rotationAngleSkidThing);
             } else if (times == 3) {
-                rx = tangentialVelocity * Math.cos(Math.PI - 2.41797);// +2.4
-                ry = tangentialVelocity * Math.sin(Math.PI - 2.41797);
+                rx = tangentialVelocity * Math.cos( - rotationAngleSkidThing);//
+                ry = tangentialVelocity * Math.sin( - rotationAngleSkidThing);
             } else {
-                rx = tangentialVelocity * Math.cos(Math.PI + 2.41797);// -2.4
-                ry = tangentialVelocity * Math.sin(Math.PI + 2.41797);
+                rx = tangentialVelocity * Math.cos(Math.PI + rotationAngleSkidThing);//
+                ry = tangentialVelocity * Math.sin(Math.PI + rotationAngleSkidThing);
             }
 
             vectorX.add(x - rx);
@@ -216,7 +217,7 @@ public class Drivetrain extends SubsystemBase {
             times++;
         }
 
-        double epsilon = 0.3; // :)
+        double epsilon = 0.2; // :)
         for (int i = 0; i < 4; i++) {
             for (int j = 0; j < 4; j++) {
                 double distance = Math.sqrt(
@@ -269,25 +270,25 @@ public class Drivetrain extends SubsystemBase {
 
         skidAccelLimit = SmartDashboard.getNumber("Skid Accel Limit", 10);
 
-        SmartDashboard.putData("Swerve Drive", new Sendable() {
-            @Override
-            public void initSendable(SendableBuilder builder) {
-                builder.setSmartDashboardType("SwerveDrive");
+    //     SmartDashboard.putData("Swerve Drive", new Sendable() {
+    //         @Override
+    //         public void initSendable(SendableBuilder builder) {
+    //             builder.setSmartDashboardType("SwerveDrive");
 
-                builder.addDoubleProperty("Front Left Angle", () -> frontLeft.getCANCoderRadians(), null);
-                builder.addDoubleProperty("Front Left Velocity", () -> frontLeft.getActualSpeed(), null);
+    //             builder.addDoubleProperty("Front Left Angle", () -> frontLeft.getCANCoderRadians(), null);
+    //             builder.addDoubleProperty("Front Left Velocity", () -> frontLeft.getActualSpeed(), null);
 
-                builder.addDoubleProperty("Front Right Angle", () -> frontRight.getCANCoderRadians(), null);
-                builder.addDoubleProperty("Front Right Velocity", () -> frontRight.getActualSpeed(), null);
+    //             builder.addDoubleProperty("Front Right Angle", () -> frontRight.getCANCoderRadians(), null);
+    //             builder.addDoubleProperty("Front Right Velocity", () -> frontRight.getActualSpeed(), null);
 
-                builder.addDoubleProperty("Back Left Angle", () -> backLeft.getCANCoderRadians(), null);
-                builder.addDoubleProperty("Back Left Velocity", () -> backLeft.getActualSpeed(), null);
+    //             builder.addDoubleProperty("Back Left Angle", () -> backLeft.getCANCoderRadians(), null);
+    //             builder.addDoubleProperty("Back Left Velocity", () -> backLeft.getActualSpeed(), null);
 
-                builder.addDoubleProperty("Back Right Angle", () -> backRight.getCANCoderRadians(), null);
-                builder.addDoubleProperty("Back Right Velocity", () -> backRight.getActualSpeed(), null);
+    //             builder.addDoubleProperty("Back Right Angle", () -> backRight.getCANCoderRadians(), null);
+    //             builder.addDoubleProperty("Back Right Velocity", () -> backRight.getActualSpeed(), null);
 
-                builder.addDoubleProperty("Robot Angle", () -> getHeadingAsRotation2d().getRadians(), null);
-            }
-        });
+    //             builder.addDoubleProperty("Robot Angle", () -> getHeadingAsRotation2d().getRadians(), null);
+    //         }
+    //     });
     }
 }
