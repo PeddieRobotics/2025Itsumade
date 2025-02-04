@@ -25,7 +25,7 @@ import frc.robot.util.RobotMap;
 public class Drivetrain extends SubsystemBase {
     private static Drivetrain instance;
 
-    private final Field2d odometryPose, botposePose;
+    private final Field2d odometryPose, mt1BotposePose, mt2BotposePose;
     
     private final SwerveModule[] swerveModules;
     private final SwerveModule frontLeft, frontRight, backLeft, backRight;
@@ -40,7 +40,7 @@ public class Drivetrain extends SubsystemBase {
 
     private SwerveDrivePoseEstimator odometry;
 
-    private LimelightShooter limelightShooter;
+    // private LimelightShooter limelightShooter;
 
     private boolean isForcingCalibration;
     private boolean useMegaTag = true;
@@ -53,9 +53,12 @@ public class Drivetrain extends SubsystemBase {
     
     public Drivetrain() {
         odometryPose = new Field2d();
-        botposePose = new Field2d();
+        mt1BotposePose = new Field2d();
+        mt2BotposePose = new Field2d();
+
         SmartDashboard.putData("odometry pose", odometryPose);
-        SmartDashboard.putData("botpose pose", botposePose);
+        SmartDashboard.putData("megatag1 pose", mt1BotposePose);
+        SmartDashboard.putData("megatag2 pose", mt2BotposePose);
 
         SmartDashboard.putBoolean("isForcingCalibration", isForcingCalibration);
         SmartDashboard.putBoolean("useMegaTag", useMegaTag);
@@ -85,7 +88,7 @@ public class Drivetrain extends SubsystemBase {
 
         pipelineNumber = 0;
 
-        limelightShooter = LimelightShooter.getInstance();
+        // limelightShooter = LimelightShooter.getInstance();
 
         isForcingCalibration = false;
         
@@ -96,17 +99,13 @@ public class Drivetrain extends SubsystemBase {
     }
 
     public double getHeading() {
-        return Math.IEEEremainder(-gyro.getYaw().getValueAsDouble(), 360);
+        return Math.IEEEremainder(gyro.getYaw().getValueAsDouble(), 360);
     }
     
     public Rotation2d getHeadingAsRotation2d() {
         return gyro.getRotation2d();
     }
 
-    public double getDegrees(){
-        return gyro.getRotation2d().getDegrees(); 
-    }
-    
     public void updateModulePositions() {
         for (int i = 0; i < 4; i++)
             positions[i] = swerveModules[i].getPosition();
@@ -143,17 +142,17 @@ public class Drivetrain extends SubsystemBase {
     public void updateOdometry(){
         odometry.update(getHeadingAsRotation2d(), positions);
 
-         if(DriverStation.isAutonomous()){
-            if (isForcingCalibration) {
-                limelightShooter.checkForAprilTagUpdates(odometry);
-            }
-        }
-        else{
-            if (useMegaTag || isForcingCalibration) {
-                limelightShooter.checkForAprilTagUpdates(odometry);
-                isForcingCalibration = false;
-            }
-        }
+        //  if(DriverStation.isAutonomous()){
+        //     if (isForcingCalibration) {
+        //         limelightShooter.checkForAprilTagUpdates(odometry);
+        //     }
+        // }
+        // else{
+        //     if (useMegaTag || isForcingCalibration) {
+        //         limelightShooter.checkForAprilTagUpdates(odometry);
+        //         isForcingCalibration = false;
+        //     }
+        // }
     }
     
     // in radians/s
@@ -198,32 +197,37 @@ public class Drivetrain extends SubsystemBase {
         else if (pov == 270)
             pipelineNumber = 0;
 
-        if (limelightShooter.getNumberOfTagsSeen() >= 2
-            // && (useMegaTag || isForcingCalibration)
-        ) {
-            Matrix<N3, N1> visionStdDevs = VecBuilder.fill(
-                isForcingCalibration ? 0.0001 : 1,
-                isForcingCalibration ? 0.0001 : 1,
-                isForcingCalibration ? 0.0001 : 30
-            );
-            odometry.setVisionMeasurementStdDevs(visionStdDevs);
-
-            // odometry set devs
-            double pl = LimelightHelpers.getLatency_Pipeline(limelightShooter.getName());
-            double cl = LimelightHelpers.getLatency_Capture(limelightShooter.getName());
-            
-            double timestampLatencyComp = Timer.getFPGATimestamp() - (pl/1000.0) - (cl/1000.0);
-            Pose2d botpose = limelightShooter.getBotpose();
-
-            odometry.addVisionMeasurement(botpose, timestampLatencyComp);
-        }
-
-        botposePose.setRobotPose(limelightShooter.getBotpose());
-        odometryPose.setRobotPose(odometry.getEstimatedPosition());
-            
+        // if (limelightShooter.getNumberOfTagsSeen() >= 2
+        //     // && (useMegaTag || isForcingCalibration)
+        // ) {
+        //     Matrix<N3, N1> visionStdDevs = VecBuilder.fill(
+        //         isForcingCalibration ? 0.0001 : 1,
+        //         isForcingCalibration ? 0.0001 : 1,
+        //         isForcingCalibration ? 0.0001 : 30
+        //     );
+        //     odometry.setVisionMeasurementStdDevs(visionStdDevs);
+        //
+        //     // odometry set devs
+        //     double pl = LimelightHelpers.getLatency_Pipeline(limelightShooter.getName());
+        //     double cl = LimelightHelpers.getLatency_Capture(limelightShooter.getName());
+        //     
+        //     double timestampLatencyComp = Timer.getFPGATimestamp() - (pl/1000.0) - (cl/1000.0);
+        //     Pose2d botpose = limelightShooter.getMT1BotPose();
+        //
+        //     odometry.addVisionMeasurement(botpose, timestampLatencyComp);
+        // }
 
         updateModulePositions();
         updateOdometry();
+
+        // mt1BotposePose.setRobotPose(limelightShooter.getMT1BotPose());
+        //
+        // LimelightHelpers.SetRobotOrientation("limelight-shooter",
+        //     odometry.getEstimatedPosition().getRotation().getDegrees(), 0, 0, 0, 0, 0);
+        // LimelightHelpers.PoseEstimate mt2 = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2("limelight-shooter");
+        //
+        // mt2BotposePose.setRobotPose(mt2.pose);
+        // odometryPose.setRobotPose(odometry.getEstimatedPosition());
 
         SmartDashboard.putNumber("module 0 desired velocity", swerveModules[0].getDesiredState().speedMetersPerSecond);
         SmartDashboard.putNumber("module 1 desired velocity", swerveModules[1].getDesiredState().speedMetersPerSecond);
@@ -245,8 +249,7 @@ public class Drivetrain extends SubsystemBase {
         SmartDashboard.putNumber("module 2 actual angle", swerveModules[2].getCANCoderRadians());
         SmartDashboard.putNumber("module 3 actual angle", swerveModules[3].getCANCoderRadians());
 
-        SmartDashboard.putNumber("gyro angle1", getHeading()); 
-        SmartDashboard.putNumber("gyro angle2", getDegrees()); 
+        SmartDashboard.putNumber("gyro heading", getHeading()); 
 
         SmartDashboard.putNumber("odometry x", odometry.getEstimatedPosition().getX());
         SmartDashboard.putNumber("odometry y", odometry.getEstimatedPosition().getY());
