@@ -11,7 +11,7 @@ import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.robot.subsystems.Drivetrain;
-import frc.robot.subsystems.LimelightShooter;
+// import frc.robot.subsystems.LimelightShooter;
 
 public class Logger {
     private static Logger instance;
@@ -20,7 +20,7 @@ public class Logger {
     private Pose2d fieldPosition;
 
     private Drivetrain drivetrain;
-    private LimelightShooter limelightShooter;
+    // private LimelightShooter limelightShooter;
 
     public static Logger getInstance() {
         if (instance == null) {
@@ -31,7 +31,7 @@ public class Logger {
 
     public Logger() {
         drivetrain = Drivetrain.getInstance();
-        limelightShooter = LimelightShooter.getInstance();
+        // limelightShooter = LimelightShooter.getInstance();
 
         // Superstructure Logs
         cmdTranslationEntry = new DoubleLogEntry(log, "Align Command/Translation Error");
