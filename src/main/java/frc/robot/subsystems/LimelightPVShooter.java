@@ -6,7 +6,7 @@ public class LimelightPVShooter extends PhotonVision {
     private static LimelightPVShooter limelightShooter;
 
     private LimelightPVShooter() {
-        super("limelight-shooter", 0.37873696, 0, 0.3892028);
+        super("front-left-cam", 0.37873696, 0, 0.3892028);
         
     }
 
@@ -28,5 +28,7 @@ public class LimelightPVShooter extends PhotonVision {
         SmartDashboard.putBoolean("PV Has Target", hasTarget());
         SmartDashboard.putNumber("PV Target ID", getTargetID());
         SmartDashboard.putNumber("PV Latency", getTotalLatencyInMS());
+        SmartDashboard.putNumber("PV Distance", getDistance());
+        SmartDashboard.putNumber("PV Filtered Distance", getFilteredDistance());
     }
 }

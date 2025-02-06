@@ -5,6 +5,7 @@ import java.util.List;
 import org.photonvision.PhotonCamera;
 import org.photonvision.PhotonPoseEstimator;
 import org.photonvision.PhotonPoseEstimator.PoseStrategy;
+import org.photonvision.PhotonUtils;
 import org.photonvision.targeting.PhotonPipelineResult;
 import org.photonvision.targeting.PhotonTrackedTarget;
 
@@ -30,6 +31,7 @@ public abstract class PhotonVision extends SubsystemBase {
     private PhotonTrackedTarget bestTarget;
     private RollingAverage txAverage, tyAverage;
     private LinearFilter distFilter;
+    private AprilTagFieldLayout aprilTagFieldLayout;
 
     protected PhotonVision(String cameraName, double cameraForwardOffset,
                         double cameraLeftOffset, double cameraHeightOffset) {
@@ -40,13 +42,13 @@ public abstract class PhotonVision extends SubsystemBase {
             0, 0, 0
         ));
 
-        AprilTagFieldLayout aprilTagFieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.kDefaultField);
+        aprilTagFieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.kDefaultField);
         ppe = new PhotonPoseEstimator(
             aprilTagFieldLayout,
             PoseStrategy.MULTI_TAG_PNP_ON_COPROCESSOR,
             robotToCam
         );
-
+        
         field = new Field2d();
         result = new PhotonPipelineResult();
         SmartDashboard.putData("estimatedPhotonVisionRobotPose", field);
@@ -70,7 +72,6 @@ public abstract class PhotonVision extends SubsystemBase {
             return;
 
         bestTarget = result.getBestTarget();
-        getEstimatedPose();
         updateRollingAverages();
     }
 
@@ -109,12 +110,26 @@ public abstract class PhotonVision extends SubsystemBase {
     // ================================================
 
     public double getDistance() {
+        Pose2d curPos = getEstimatedPose();
+
+        int tagNo = getTargetID();
+        var thing = aprilTagFieldLayout.getTagPose(tagNo);
+        if (!thing.isPresent())
+            return 0;
+        Pose2d tag = thing.get().toPose2d();
+        
+        double x = tag.getX() - curPos.getX();
+        double y = tag.getY() - curPos.getY();
+        
+        return Math.sqrt(x * x + y * y);
+
         // TODO: set constants 
         // return hasTarget() ? PhotonUtils.calculateDistanceToTargetMeters(
-        //     getTargetID(), getPipeline(), getNumberOfTagsSeen(), getDistance()
+        //     0.3892028, 0.308, 0, Math.toRadians(getTy())
         // ) : 0;
-        // 
-        return 0;
+        
+        // if (!hasTarget()) return 0;
+        // return (12.125 - 15.375) / (Math.tan(Math.toRadians(getTy())));
     }
 
     public double getFilteredDistance(){
@@ -129,8 +144,8 @@ public abstract class PhotonVision extends SubsystemBase {
         return hasTarget() ? targets.size() : 0;
     }
 
-    public double getTargetID() {
-        return hasTarget() ? bestTarget.getFiducialId() : 0;
+    public int getTargetID() {
+        return hasTarget() ? (int) bestTarget.getFiducialId() : 0;
     }
 
     public boolean hasTarget() {
