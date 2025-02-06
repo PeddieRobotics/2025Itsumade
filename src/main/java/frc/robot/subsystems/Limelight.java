@@ -143,8 +143,9 @@ public abstract class Limelight extends SubsystemBase {
         return LimelightHelpers.getNeuralClassID(name);
     }
 
-    public int getTagsSeen() {
-        return LimelightHelpers.getNumberOfAprilTagsSeen(name);
+    public int getNumberOfTagsSeen() {
+        double[] botposeArr = LimelightHelpers.getBotPose_wpiBlue(name);
+        return botposeArr.length == 0 ? 0 : (int) botposeArr[7];
     }
 
     public boolean hasTarget() {
@@ -190,11 +191,11 @@ public abstract class Limelight extends SubsystemBase {
                 distFilter.calculate(dist);
             
             // rotationAverage.add(getBotpose().getRotation().getDegrees());//based on alliance of driverstation, awaiting testing 
-            rotationAverage.add(getBotpose().getRotation().getDegrees()); 
+            rotationAverage.add(getMT1BotPose().getRotation().getDegrees()); 
 
             //red
-            rxAverage.add(getBotpose().getX()); 
-            ryAverage.add(getBotpose().getY()); 
+            rxAverage.add(getMT1BotPose().getX()); 
+            ryAverage.add(getMT1BotPose().getY()); 
         }
     }
 
@@ -211,7 +212,7 @@ public abstract class Limelight extends SubsystemBase {
     //                 Botpose
     // =======================================
 
-    public Pose2d getBotpose() {
+    public Pose2d getMT1BotPose() {
         double[] result;
         try {
             // Use blue coordinates by default for all odometry
@@ -235,29 +236,38 @@ public abstract class Limelight extends SubsystemBase {
 
         return new Pose2d();
     }
+    
+    public Pose2d getMT2BotPose() {
+        double gyro = Drivetrain.getInstance().getHeading();
+        LimelightHelpers.SetRobotOrientation(name, gyro, 0, 0, 0, 0, 0);
 
-    public void checkForAprilTagUpdates(SwerveDrivePoseEstimator odometry) {
-        int tagsSeen = LimelightHelpers.getNumberOfAprilTagsSeen(name);
-        //IMPORTANT:still has safe guard preventing the use of update vision if it is outside a half meter range, delete or change 
-        //condition to furhter enable checkforapriltag updates 
-        
-        // if (tagsSeen > 1 && this.getBotpose().relativeTo(odometry.getEstimatedPosition()).getTranslation().getNorm() < 0.5) {
-        //     odometry.addVisionMeasurement(this.getBotpose(), Timer.getFPGATimestamp());
-        // }
-
-        if (tagsSeen > 1) {
-            // Get pipeline and capture latency (in milliseconds)
-            double tl = LimelightHelpers.getLatency_Pipeline(name);
-            double cl = LimelightHelpers.getLatency_Capture(name);
-
-            // Calculate a latency-compensated timestamp for the vision measurement (in seconds)
-            double timestampLatencyComp = Timer.getFPGATimestamp() - (tl/1000.0) - (cl/1000.0);
-            calculatedBotpose = this.getBotpose();
-            odometry.addVisionMeasurement(calculatedBotpose, timestampLatencyComp);
-        }
-        else
-            calculatedBotpose = null;
+        LimelightHelpers.PoseEstimate mt2 = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(name);
+        // gyro rate
+        return mt2.pose != null ? mt2.pose : new Pose2d();
     }
+
+    // public void checkForAprilTagUpdates(SwerveDrivePoseEstimator odometry) {
+    //     int tagsSeen = getNumberOfTagsSeen();
+    //     //IMPORTANT:still has safe guard preventing the use of update vision if it is outside a half meter range, delete or change 
+    //     //condition to furhter enable checkforapriltag updates 
+    //     
+    //     // if (tagsSeen > 1 && this.getBotpose().relativeTo(odometry.getEstimatedPosition()).getTranslation().getNorm() < 0.5) {
+    //     //     odometry.addVisionMeasurement(this.getBotpose(), Timer.getFPGATimestamp());
+    //     // }
+    //
+    //     if (tagsSeen > 1) {
+    //         // Get pipeline and capture latency (in milliseconds)
+    //         double tl = LimelightHelpers.getLatency_Pipeline(name);
+    //         double cl = LimelightHelpers.getLatency_Capture(name);
+    //
+    //         // Calculate a latency-compensated timestamp for the vision measurement (in seconds)
+    //         double timestampLatencyComp = Timer.getFPGATimestamp() - (tl/1000.0) - (cl/1000.0);
+    //         calculatedBotpose = this.getMT1BotPose();
+    //         odometry.addVisionMeasurement(calculatedBotpose, timestampLatencyComp);
+    //     }
+    //     else
+    //         calculatedBotpose = null;
+    // }
     
     // getBotpose returns botpose regardless
     // getCalculatedBotpose only returns values that are used,

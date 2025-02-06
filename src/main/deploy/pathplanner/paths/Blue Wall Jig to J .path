@@ -3,29 +3,29 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 2.0,
-        "y": 7.0
+        "x": 6.976,
+        "y": 7.383
       },
       "prevControl": null,
       "nextControl": {
-        "x": 2.25,
-        "y": 7.0
+        "x": 6.558179309168537,
+        "y": 6.952179951558904
       },
       "isLocked": false,
-      "linkedName": null
+      "linkedName": "RigBlueWall"
     },
     {
       "anchor": {
-        "x": 2.5,
-        "y": 7.0
+        "x": 5.0115,
+        "y": 5.3315
       },
       "prevControl": {
-        "x": 2.25,
-        "y": 7.0
+        "x": 5.932979486609391,
+        "y": 6.320407444160203
       },
       "nextControl": null,
       "isLocked": false,
-      "linkedName": null
+      "linkedName": "JReef"
     }
   ],
   "rotationTargets": [],
@@ -34,7 +34,7 @@
   "eventMarkers": [],
   "globalConstraints": {
     "maxVelocity": 1.0,
-    "maxAcceleration": 2.0,
+    "maxAcceleration": 5.0,
     "maxAngularVelocity": 540.0,
     "maxAngularAcceleration": 720.0,
     "nominalVoltage": 12.0,
@@ -42,13 +42,13 @@
   },
   "goalEndState": {
     "velocity": 0,
-    "rotation": 180.0
+    "rotation": 60.39554925399499
   },
   "reversed": false,
-  "folder": null,
+  "folder": "Jig Start",
   "idealStartingState": {
     "velocity": 0,
-    "rotation": 180.0
+    "rotation": 59.99999999999999
   },
-  "useDefaultConstraints": false
+  "useDefaultConstraints": true
 }

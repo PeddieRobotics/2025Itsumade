@@ -1,0 +1,54 @@
+{
+  "version": "2025.0",
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 6.976,
+        "y": 5.8
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 6.3834005365049755,
+        "y": 5.640784163127856
+      },
+      "isLocked": false,
+      "linkedName": "RigOffsetBlueWall"
+    },
+    {
+      "anchor": {
+        "x": 5.0115,
+        "y": 5.3315
+      },
+      "prevControl": {
+        "x": 5.7419693130279565,
+        "y": 5.494851573833461
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": "JReef"
+    }
+  ],
+  "rotationTargets": [],
+  "constraintZones": [],
+  "pointTowardsZones": [],
+  "eventMarkers": [],
+  "globalConstraints": {
+    "maxVelocity": 1.0,
+    "maxAcceleration": 5.0,
+    "maxAngularVelocity": 540.0,
+    "maxAngularAcceleration": 720.0,
+    "nominalVoltage": 12.0,
+    "unlimited": false
+  },
+  "goalEndState": {
+    "velocity": 0,
+    "rotation": 60.39554925399499
+  },
+  "reversed": false,
+  "folder": "Jig Start",
+  "idealStartingState": {
+    "velocity": 0,
+    "rotation": 59.99999999999999
+  },
+  "useDefaultConstraints": true
+}

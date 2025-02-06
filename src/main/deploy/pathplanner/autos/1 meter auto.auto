@@ -7,13 +7,13 @@
         {
           "type": "path",
           "data": {
-            "pathName": "0.5 meter right"
+            "pathName": "1 meter forward"
           }
         }
       ]
     }
   },
   "resetOdom": true,
-  "folder": null,
+  "folder": "Normal Starts",
   "choreoAuto": false
 }

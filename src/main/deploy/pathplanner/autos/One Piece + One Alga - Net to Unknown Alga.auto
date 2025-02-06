@@ -7,25 +7,25 @@
         {
           "type": "path",
           "data": {
-            "pathName": "0.5 meter back"
-          }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "ALIGN_TO_REEF"
+            "pathName": "Middle to G"
           }
         },
         {
           "type": "path",
           "data": {
-            "pathName": "0.5 meter back"
+            "pathName": "G to Net"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Net to Unknown"
           }
         }
       ]
     }
   },
   "resetOdom": true,
-  "folder": null,
+  "folder": "Mid Start",
   "choreoAuto": false
 }
