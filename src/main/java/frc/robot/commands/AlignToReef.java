@@ -166,6 +166,7 @@ public class AlignToReef extends Command {
     desiredDistance = SmartDashboard.getNumber("Desired Distance", desiredDistance);
     desiredTranslation = SmartDashboard.getNumber("Desired Translation", desiredTranslation);
 
+    //TODO: getHeading is in clockwise positive, should be counterclockwise on 2025j
     rotationError = desiredAngle + drivetrain.getHeading();
     double desiredTx = drivetrain.getHeading() - desiredAngle; // = gyro - desiredAngle
     
@@ -264,6 +265,7 @@ public class AlignToReef extends Command {
       return true;
     }
     SmartDashboard.putBoolean("ended by time", false);
+    //FYI rotationerror will never be >1000, just hacky so it doesn't care about rotation error
     return Math.abs(txValue) < 1 && Math.abs(rotationError) < 1000 && Math.abs(distanceError) < 1 && elapsed >= 0.1;
   }
 }

@@ -34,12 +34,12 @@ public class Logger {
         // limelightShooter = LimelightShooter.getInstance();
 
         // Superstructure Logs
-        cmdTranslationEntry = new DoubleLogEntry(log, "Align Command/Translation Error");
-        cmdDistanceEntry = new DoubleLogEntry(log, "Align Command/Distance Error");
-        cmdRotationEntry = new DoubleLogEntry(log, "Align Command/Rotation Error");
-        cmdCommandXEntry = new DoubleLogEntry(log, "Align Command/Commanded X");
-        cmdCommandYEntry = new DoubleLogEntry(log, "Align Command/Commanded Y");
-        cmdCommandRotationEntry = new DoubleLogEntry(log, "Align Command/Commanded Rotation");
+        cmdTranslationEntry = new DoubleLogEntry(log, "/Align Command/Translation Error");
+        cmdDistanceEntry = new DoubleLogEntry(log, "/Align Command/Distance Error");
+        cmdRotationEntry = new DoubleLogEntry(log, "/Align Command/Rotation Error");
+        cmdCommandXEntry = new DoubleLogEntry(log, "/Align Command/Commanded X");
+        cmdCommandYEntry = new DoubleLogEntry(log, "/Align Command/Commanded Y");
+        cmdCommandRotationEntry = new DoubleLogEntry(log, "/Align Command/Commanded Rotation");
     }
 
     public void logEvent(String event, Boolean isStart) {
@@ -60,5 +60,8 @@ public class Logger {
         // LLShooterDistanceEntry.append(limelightShooter.getDistance());
         // LLShooterTxEntry.append(limelightShooter.getTx());
 
+    }
+
+    public void updateDrivetrainLogs(){
     }
 }
