@@ -161,6 +161,7 @@ public class AlignToReef extends Command {
 
     desiredDistance = SmartDashboard.getNumber("Desired Distance", desiredDistance);
 
+    //TODO: getHeading is in clockwise positive, should be counterclockwise on 2025j
     rotationError = desiredAngle + drivetrain.getHeading();
     double desiredTx = -rotationError;
 
