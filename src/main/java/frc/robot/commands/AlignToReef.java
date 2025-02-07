@@ -26,7 +26,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 public class AlignToReef extends Command {
   private Drivetrain drivetrain;
   private OI oi;
-  private LimelightPVShooter limelightShooter;
+  private LimelightPVShooter shooterCam;
 
   private PIDController rotationPidController, translationPidController, distancePidController;
   private double rotationUseLowerPThreshold, rotationThresholdP;
@@ -38,6 +38,7 @@ public class AlignToReef extends Command {
   private double desiredDistance;
   private double txValue, rotationError, distanceError;
   private double startTime;
+  private double desiredTranslation;
   private Translation2d translation;
   private boolean isAuto;
 
@@ -54,15 +55,17 @@ public class AlignToReef extends Command {
     this.isAuto = isAuto;
 
     drivetrain = Drivetrain.getInstance();
-    limelightShooter = LimelightPVShooter.getInstance();
+    shooterCam = LimelightPVShooter.getInstance();
     logger = Logger.getInstance();
 
     desiredAngle = 0;
     desiredDistance = 0.72;
+    desiredTranslation = 0.07;
 
     SmartDashboard.putNumber("Desired Distance", desiredDistance);
+    SmartDashboard.putNumber("Desired Translation", desiredTranslation);
 
-    distanceP = 1.5;
+    distanceP = 2;
     distanceI = 0;
     distanceD = 0;
     // distanceD = 0.0762;
@@ -74,7 +77,7 @@ public class AlignToReef extends Command {
     SmartDashboard.putNumber("Distance D", distanceD);
     SmartDashboard.putNumber("Distance FF", distanceFF);
     
-    translationP = 1.3;
+    translationP = 1.75;
     translationI = 0;
     translationD = 0;
     translationFF = 0.001;
@@ -123,7 +126,7 @@ public class AlignToReef extends Command {
   public void initialize() {
     oi = OI.getInstance();
 
-    int desiredTarget = (int) limelightShooter.getTargetID();
+    int desiredTarget = (int) shooterCam.getTargetID();
     if (!Constants.kReefDesiredAngle.containsKey(desiredTarget))
       return;
 
@@ -138,7 +141,7 @@ public class AlignToReef extends Command {
   // Called every time the scheduler runs while the command is scheduled.
   @Override
   public void execute() {
-    limelightShooter.setPipeline(drivetrain.getPipelineNumber());
+    shooterCam.setPipeline(drivetrain.getPipelineNumber());
     translationP = SmartDashboard.getNumber("PhilipAlign P", translationP);
     translationI = SmartDashboard.getNumber("PhilipAlign I", translationI);
     translationD = SmartDashboard.getNumber("PhilipAlign D", translationD);
@@ -161,6 +164,7 @@ public class AlignToReef extends Command {
     rotationUseLowerPThreshold = SmartDashboard.getNumber("rotationUseLowerPThreshold", rotationUseLowerPThreshold);
 
     desiredDistance = SmartDashboard.getNumber("Desired Distance", desiredDistance);
+    desiredTranslation = SmartDashboard.getNumber("Desired Translation", desiredTranslation);
 
     rotationError = desiredAngle + drivetrain.getHeading();
     double desiredTx = drivetrain.getHeading() - desiredAngle; // = gyro - desiredAngle
@@ -179,17 +183,14 @@ public class AlignToReef extends Command {
     translationPidController.setPID(translationP, translationI, translationD);
     distancePidController.setPID(distanceP, distanceI, distanceD);
 
-    double distance = limelightShooter.getDistanceEstimatedPose();
+    double distance = shooterCam.getDistanceEstimatedPose();
     
     double horizontalTranslation = 0;
     double forBackTranslation = 0;
-    if (limelightShooter.hasTarget()) {
-      txValue = limelightShooter.getTx();
+    if (shooterCam.hasTarget()) {
+      txValue = shooterCam.getTx();
       
-      // if (Math.abs(txValue) < 3)
-        // translationError = txValue - desiredTx;
-      // else
-      double translationError = distance * Math.sin((txValue-desiredTx)*(Math.PI/180));
+      double translationError = distance * Math.sin((txValue-desiredTx)*(Math.PI/180)) - desiredTranslation;
       
       SmartDashboard.putNumber("Translation Error", translationError);
       SmartDashboard.putNumber("Distance Error", distanceError);
