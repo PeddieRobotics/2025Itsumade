@@ -207,9 +207,9 @@ public class AlignToReef extends Command {
         horizontalTranslation = translationPidController.calculate(translationError) - Math.signum(translationError) * translationFF;
 
       if (Math.abs(distanceError) > distanceThreshold)
-        forBackTranslation = distancePidController.calculate(distanceError) + Math.signum(distanceError) * distanceFF;
+        forBackTranslation = distancePidController.calculate(distanceError) - Math.signum(distanceError) * distanceFF;
 
-      translation = new Translation2d(forBackTranslation, -horizontalTranslation);
+      translation = new Translation2d(-forBackTranslation, -horizontalTranslation);
 
       logger.cmdTranslationEntry.append(translationError);
       logger.cmdDistanceEntry.append(distanceError);

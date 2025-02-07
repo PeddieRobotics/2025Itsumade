@@ -32,6 +32,7 @@ public abstract class PhotonVision extends SubsystemBase {
     private RollingAverage txAverage, tyAverage;
     private LinearFilter distFilter;
     private AprilTagFieldLayout aprilTagFieldLayout;
+    private Pose2d estimatedPose;
 
     protected PhotonVision(String cameraName, double cameraForwardOffset,
                         double cameraLeftOffset, double cameraHeightOffset) {
@@ -49,9 +50,12 @@ public abstract class PhotonVision extends SubsystemBase {
             robotToCam
         );
         
+        estimatedPose = new Pose2d();
+
         field = new Field2d();
         result = new PhotonPipelineResult();
-        SmartDashboard.putData("estimatedPhotonVisionRobotPose", field);
+
+        SmartDashboard.putData("PhotonVision estimated pose", field);
 
         txAverage = new RollingAverage();
         tyAverage = new RollingAverage();
@@ -73,24 +77,32 @@ public abstract class PhotonVision extends SubsystemBase {
 
         bestTarget = result.getBestTarget();
         updateRollingAverages();
+
+        getEstimatedPoseInternal();
+        field.setRobotPose(estimatedPose);
     }
 
     // ========================================================
     //                 Pose/Translation Getters
     // ========================================================
     
-    public Pose2d getEstimatedPose(){
+    // PLEASE PLEASE do not call this function yourself
+    // the PhotonPoseEstimator only occasionally has updates
+    // the public getEstimatedPose returns the latest update
+    private void getEstimatedPoseInternal(){
+        if (!hasTarget())
+            return;
+
         var update = ppe.update(result);
-        if (!update.isPresent()) {
-            return new Pose2d();
-        }
+        if (!update.isPresent())
+            return;
         
-        Pose3d estimatedPhotonVisionRobotPose3d = update.get().estimatedPose;
-        Pose2d estimatedPhotonVisionRobotPose2d = estimatedPhotonVisionRobotPose3d.toPose2d();
-
-        field.setRobotPose(estimatedPhotonVisionRobotPose2d);
-
-        return estimatedPhotonVisionRobotPose2d;
+        estimatedPose = update.get().estimatedPose.toPose2d();
+    }
+    
+    // you should use this for estimated pose
+    public Pose2d getEstimatedPose() {
+        return estimatedPose;
     }
 
     // =======================================================
@@ -109,27 +121,28 @@ public abstract class PhotonVision extends SubsystemBase {
     //                 Distance Getters
     // ================================================
 
-    public double getDistance() {
-        Pose2d curPos = getEstimatedPose();
-
-        int tagNo = getTargetID();
-        var thing = aprilTagFieldLayout.getTagPose(tagNo);
-        if (!thing.isPresent())
+    public double getDistanceEstimatedPose() {
+        if (!hasTarget())
             return 0;
-        Pose2d tag = thing.get().toPose2d();
-        
-        double x = tag.getX() - curPos.getX();
-        double y = tag.getY() - curPos.getY();
-        
-        return Math.sqrt(x * x + y * y);
 
-        // TODO: set constants 
-        // return hasTarget() ? PhotonUtils.calculateDistanceToTargetMeters(
-        //     0.3892028, 0.308, 0, Math.toRadians(getTy())
-        // ) : 0;
+        var aprilTagPose = aprilTagFieldLayout.getTagPose(getTargetID());
+        if (!aprilTagPose.isPresent())
+            return 0;
+
+        Pose2d tag = aprilTagPose.get().toPose2d();
+        Pose2d robotPose = getEstimatedPose();
+
+        double dx = tag.getX() - robotPose.getX();
+        double dy = tag.getY() - robotPose.getY();
         
-        // if (!hasTarget()) return 0;
-        // return (12.125 - 15.375) / (Math.tan(Math.toRadians(getTy())));
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    public double getDistanceTy() {
+        // TODO: set constants 
+        return hasTarget() ? PhotonUtils.calculateDistanceToTargetMeters(
+            0.3892028, 1.4859, 0, Math.toRadians(getTy())
+        ) : 0;
     }
 
     public double getFilteredDistance(){
@@ -185,7 +198,7 @@ public abstract class PhotonVision extends SubsystemBase {
             txAverage.add(getTx());
             tyAverage.add(getTy());
 
-            double dist = getDistance();
+            double dist = getDistanceTy();
             if (dist != 0)
                 distFilter.calculate(dist);
         }
