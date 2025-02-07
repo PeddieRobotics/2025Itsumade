@@ -30,6 +30,7 @@ public class LimelightPVShooter extends PhotonVision {
         SmartDashboard.putNumber("PV Latency", getTotalLatencyInMS());
         SmartDashboard.putNumber("PV Distance (odometry)", getDistanceEstimatedPose());
         SmartDashboard.putNumber("PV Distance (Ty)", getDistanceTy());
-        SmartDashboard.putNumber("PV Filtered Distance", getFilteredDistance());
+        SmartDashboard.putNumber("PV Filtered Distance (odometry)", getFilteredDistanceEstimatedPose());
+        SmartDashboard.putNumber("PV Filtered Distane (Ty)", getFilteredDistanceTy());
     }
 }

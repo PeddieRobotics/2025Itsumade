@@ -1,5 +1,6 @@
 package frc.robot.subsystems;
 
+import java.util.Collections;
 import java.util.List;
 
 import org.photonvision.PhotonCamera;
@@ -30,7 +31,7 @@ public abstract class PhotonVision extends SubsystemBase {
     private List<PhotonTrackedTarget> targets;
     private PhotonTrackedTarget bestTarget;
     private RollingAverage txAverage, tyAverage;
-    private LinearFilter distFilter;
+    private LinearFilter distTyFilter, distEstimatedPoseFilter;
     private AprilTagFieldLayout aprilTagFieldLayout;
     private Pose2d estimatedPose;
 
@@ -59,7 +60,9 @@ public abstract class PhotonVision extends SubsystemBase {
 
         txAverage = new RollingAverage();
         tyAverage = new RollingAverage();
-        distFilter = LinearFilter.singlePoleIIR(0.24, 0.02);
+
+        distTyFilter = LinearFilter.singlePoleIIR(0.24, 0.02);
+        distEstimatedPoseFilter = LinearFilter.singlePoleIIR(0.24, 0.02);
     }
 
     @Override 
@@ -71,11 +74,13 @@ public abstract class PhotonVision extends SubsystemBase {
             return;
 
         result = pipelineResults.get(0);
-        targets = result.getTargets();
         if (!result.hasTargets())
             return;
 
-        bestTarget = result.getBestTarget();
+        targets = result.getTargets();
+        // sort the list by area / get largest area
+        Collections.sort(targets, (o1, o2) -> (int) (o2.getArea() - o1.getArea()));
+        bestTarget = targets.get(0);
         updateRollingAverages();
 
         getEstimatedPoseInternal();
@@ -121,6 +126,7 @@ public abstract class PhotonVision extends SubsystemBase {
     //                 Distance Getters
     // ================================================
 
+    // distance to CENTER OF ROBOT
     public double getDistanceEstimatedPose() {
         if (!hasTarget())
             return 0;
@@ -138,6 +144,7 @@ public abstract class PhotonVision extends SubsystemBase {
         return Math.sqrt(dx * dx + dy * dy);
     }
 
+    // distance to CAMERA LENS
     public double getDistanceTy() {
         // TODO: set constants 
         return hasTarget() ? PhotonUtils.calculateDistanceToTargetMeters(
@@ -145,8 +152,12 @@ public abstract class PhotonVision extends SubsystemBase {
         ) : 0;
     }
 
-    public double getFilteredDistance(){
-        return distFilter.lastValue();
+    public double getFilteredDistanceTy(){
+        return distTyFilter.lastValue();
+    }
+
+    public double getFilteredDistanceEstimatedPose(){
+        return distEstimatedPoseFilter.lastValue();
     }
 
     // ======================================================
@@ -194,14 +205,19 @@ public abstract class PhotonVision extends SubsystemBase {
     // ===========================================================
     
     public void updateRollingAverages() {
-        if (hasTarget()) {
-            txAverage.add(getTx());
-            tyAverage.add(getTy());
+        if (!hasTarget())
+            return;
 
-            double dist = getDistanceTy();
-            if (dist != 0)
-                distFilter.calculate(dist);
-        }
+        txAverage.add(getTx());
+        tyAverage.add(getTy());
+
+        double distTy = getDistanceTy();
+        if (distTy != 0)
+            distTyFilter.calculate(distTy);
+
+        double distEstimatedPose = getDistanceEstimatedPose();
+        if (distEstimatedPose != 0)
+            distEstimatedPoseFilter.calculate(distEstimatedPose);
     }
 
     public void resetRollingAverages(){

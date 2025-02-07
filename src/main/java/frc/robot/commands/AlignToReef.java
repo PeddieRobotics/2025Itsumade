@@ -58,15 +58,15 @@ public class AlignToReef extends Command {
     logger = Logger.getInstance();
 
     desiredAngle = 0;
-    desiredDistance = 17.0;
+    desiredDistance = 0.72;
 
     SmartDashboard.putNumber("Desired Distance", desiredDistance);
 
-    distanceP = 0.044;
+    distanceP = 1.5;
     distanceI = 0;
-    distanceD = 0.003;
+    distanceD = 0;
+    // distanceD = 0.0762;
     distanceFF = 0;
-    distanceThreshold = 1;
     distancePidController = new PIDController(distanceP, distanceI , distanceD);
 
     SmartDashboard.putNumber("Distance P", distanceP);
@@ -74,7 +74,7 @@ public class AlignToReef extends Command {
     SmartDashboard.putNumber("Distance D", distanceD);
     SmartDashboard.putNumber("Distance FF", distanceFF);
     
-    translationP = 0.07;
+    translationP = 1.3;
     translationI = 0;
     translationD = 0;
     translationFF = 0.001;
@@ -85,7 +85,7 @@ public class AlignToReef extends Command {
     SmartDashboard.putNumber("PhilipAlign D", translationD);
     SmartDashboard.putNumber("PhilipAlign FF", translationFF);
 
-    rotationP = 0.07;
+    rotationP = 0.05;
     rotationI = 0.0;
     rotationD = 0.0;
     rotationFF = 0.0;
@@ -98,8 +98,9 @@ public class AlignToReef extends Command {
     SmartDashboard.putNumber("Rotation D", rotationD);
     SmartDashboard.putNumber("Rotation FF", rotationFF);
 
+    distanceThreshold = 0.0254;
     rotationThreshold = 1;
-    translationThreshold = 1;
+    translationThreshold = 0.0254;
     rotationUseLowerPThreshold = 1.5;
     
     SmartDashboard.putNumber("rotationThreshold", rotationThreshold);
@@ -162,7 +163,9 @@ public class AlignToReef extends Command {
     desiredDistance = SmartDashboard.getNumber("Desired Distance", desiredDistance);
 
     rotationError = desiredAngle + drivetrain.getHeading();
-    double desiredTx = -rotationError;
+    double desiredTx = drivetrain.getHeading() - desiredAngle; // = gyro - desiredAngle
+    
+    SmartDashboard.putNumber("desired Tx", desiredTx);
 
     // set rotation PID controller
     if(Math.abs(rotationError) < rotationUseLowerPThreshold)
@@ -176,40 +179,29 @@ public class AlignToReef extends Command {
     translationPidController.setPID(translationP, translationI, translationD);
     distancePidController.setPID(distanceP, distanceI, distanceD);
 
-    // SmartDashboard.putNumber("PhilipAlign desired gyro angle", desiredAngle);
-    // SmartDashboard.putNumber("PhilipAlign gyro angle", drivetrain.getHeading());
-    // SmartDashboard.putNumber("PhilipAlign desired Tx", desiredTx);2
-    //
-    // if (!limelightShooter.hasTarget() && lastTagSeen == -1) {
-    //   drivetrain.drive(new Translation2d(0, 0), 0, false, null);
-    //  return;
-    // }
-
-    double distance = limelightShooter.getFilteredDistance();
-
+    double distance = limelightShooter.getDistanceEstimatedPose();
     
     double horizontalTranslation = 0;
     double forBackTranslation = 0;
     if (limelightShooter.hasTarget()) {
       txValue = limelightShooter.getTx();
-      double translationError = 0;
-      if (Math.abs(txValue) < 3) {
-        translationError = txValue - desiredTx;
-
-      } else {
-        translationError = distance * Math.sin((txValue-desiredTx)*(Math.PI/180));
-      }
+      
+      // if (Math.abs(txValue) < 3)
+        // translationError = txValue - desiredTx;
+      // else
+      double translationError = distance * Math.sin((txValue-desiredTx)*(Math.PI/180));
+      
       SmartDashboard.putNumber("Translation Error", translationError);
       SmartDashboard.putNumber("Distance Error", distanceError);
       distanceError = distance - desiredDistance;
 
       if (Math.abs(translationError) > translationThreshold)
-        horizontalTranslation = translationPidController.calculate(translationError) - Math.signum(translationError) * translationFF;
+        horizontalTranslation = translationPidController.calculate(translationError) + Math.signum(translationError) * translationFF;
 
       if (Math.abs(distanceError) > distanceThreshold)
         forBackTranslation = distancePidController.calculate(distanceError) - Math.signum(distanceError) * distanceFF;
 
-      translation = new Translation2d(-forBackTranslation, -horizontalTranslation);
+      translation = new Translation2d(-forBackTranslation, horizontalTranslation);
 
       logger.cmdTranslationEntry.append(translationError);
       logger.cmdDistanceEntry.append(distanceError);
@@ -236,14 +228,14 @@ public class AlignToReef extends Command {
     logger.cmdCommandYEntry.append(translation.getY());
     logger.cmdCommandRotationEntry.append(rotation);
     
-    double translateX = translation.getX();
-    double translateY = translation.getY();
-
-    double translateX_sgn = Math.signum(translateX);
-    double translateY_sgn = Math.signum(translateY);
-    double desaturatedX = Math.min(Math.abs(translateX), 1);
-    double desaturatedY = Math.min(Math.abs(translateY), 1);
-    translation = new Translation2d(translateX_sgn * desaturatedX, translateY_sgn * desaturatedY);
+    // double translateX = translation.getX();
+    // double translateY = translation.getY();
+    //
+    // double translateX_sgn = Math.signum(translateX);
+    // double translateY_sgn = Math.signum(translateY);
+    // double desaturatedX = Math.min(Math.abs(translateX), 1);
+    // double desaturatedY = Math.min(Math.abs(translateY), 1);
+    // translation = new Translation2d(translateX_sgn * desaturatedX, translateY_sgn * desaturatedY);
 
     drivetrain.drive(translation, rotation, false, null);
   }
