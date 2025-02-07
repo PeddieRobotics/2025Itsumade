@@ -1,0 +1,55 @@
+{
+  "version": "2025.0",
+  "command": {
+    "type": "sequential",
+    "data": {
+      "commands": [
+        {
+          "type": "named",
+          "data": {
+            "name": "REGISTER_START_TIME"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Blue Wall to J"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "J to HP"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "HP to K"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "K to HP"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "HP to L"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "REGISTER_END_TIME"
+          }
+        }
+      ]
+    }
+  },
+  "resetOdom": true,
+  "folder": "Normal Starts",
+  "choreoAuto": false
+}
