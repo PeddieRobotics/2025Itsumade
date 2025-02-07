@@ -193,6 +193,7 @@ public class AlignToReef extends Command {
     if (limelightShooter.hasTarget()) {
       txValue = limelightShooter.getTx();
       double translationError = 0;
+      //if you are close enough to the tag, assume translation error is txError so you can correct for final adjustment faster :)
       if (Math.abs(txValue) < 3) {
         translationError = txValue - desiredTx;
 
@@ -271,6 +272,7 @@ public class AlignToReef extends Command {
       return true;
     }
     SmartDashboard.putBoolean("ended by time", false);
+    //FYI rotationerror will never be >1000, just hacky so it doesn't care about rotation error
     return Math.abs(txValue) < 1 && Math.abs(rotationError) < 1000 && Math.abs(distanceError) < 1 && elapsed >= 0.1;
   }
 }
