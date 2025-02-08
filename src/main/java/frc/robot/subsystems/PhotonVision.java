@@ -109,6 +109,10 @@ public abstract class PhotonVision extends SubsystemBase {
     public Pose2d getEstimatedPose() {
         return estimatedPose;
     }
+    
+    public Transform3d getBestCameraToTarget() {
+        return hasTarget() ? bestTarget.getBestCameraToTarget() : new Transform3d();
+    }
 
     // =======================================================
     //                 T-Something Raw Getters
@@ -174,6 +178,20 @@ public abstract class PhotonVision extends SubsystemBase {
 
     public boolean hasTarget() {
         return result.hasTargets();
+    }
+
+    public Pose2d getAprilTagPose(int number) {
+        var aprilTagPose = aprilTagFieldLayout.getTagPose(number);
+        if (!aprilTagPose.isPresent())
+            return new Pose2d();
+        return aprilTagPose.get().toPose2d();
+    }
+    
+    public Pose2d getAprilTagPose() {
+        var aprilTagPose = aprilTagFieldLayout.getTagPose(getTargetID());
+        if (!aprilTagPose.isPresent())
+            return new Pose2d();
+        return aprilTagPose.get().toPose2d();
     }
 
     // ====================================================

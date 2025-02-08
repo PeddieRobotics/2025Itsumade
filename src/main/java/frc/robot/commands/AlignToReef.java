@@ -129,7 +129,6 @@ public class AlignToReef extends Command {
     int desiredTarget = (int) shooterCam.getTargetID();
     if (!Constants.kReefDesiredAngle.containsKey(desiredTarget))
       return;
-
     desiredAngle = Constants.kReefDesiredAngle.get(desiredTarget);
 
     translation = new Translation2d(0, 0);
