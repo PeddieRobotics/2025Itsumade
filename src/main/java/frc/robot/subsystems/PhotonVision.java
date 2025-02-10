@@ -12,15 +12,18 @@ import org.photonvision.targeting.PhotonTrackedTarget;
 
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
+import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.filter.LinearFilter;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation3d;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.util.LimelightHelpers;
 import frc.robot.util.RollingAverage;
 
 public abstract class PhotonVision extends SubsystemBase {
@@ -231,5 +234,30 @@ public abstract class PhotonVision extends SubsystemBase {
 
     public double getTotalLatencyInMS(){
         return result.metadata.getLatencyMillis();
+    }
+
+    public void checkForAprilTagUpdates(SwerveDrivePoseEstimator odometry) {
+        Pose2d calculatedBotpose;
+        int tagsSeen = getNumberOfTagsSeen();
+        //IMPORTANT:still has safe guard preventing the use of update vision if it is outside a half meter range, delete or change 
+        //condition to furhter enable checkforapriltag updates 
+        
+        // if (tagsSeen > 1 && this.getBotpose().relativeTo(odometry.getEstimatedPosition()).getTranslation().getNorm() < 0.5) {
+        //     odometry.addVisionMeasurement(this.getBotpose(), Timer.getFPGATimestamp());
+        // }
+        if (tagsSeen > 1) {
+            // Get pipeline and capture latency (in milliseconds)
+            double latency = getTotalLatencyInMS();
+            // double cl = LimelightHelpers.getLatency_Capture(name);
+    
+            // Calculate a latency-compensated timestamp for the vision measurement (in seconds)
+            double timestampLatencyComp = Timer.getFPGATimestamp() - latency / 1000.0;
+
+            // double timestampLatencyComp = Timer.getFPGATimestamp() - (tl/1000.0) - (cl/1000.0);
+            calculatedBotpose = getEstimatedPose();
+            odometry.addVisionMeasurement(calculatedBotpose, timestampLatencyComp);
+        }
+        else
+            calculatedBotpose = null;
     }
 }

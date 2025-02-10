@@ -6,6 +6,8 @@ import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.commands.AlignToReef;
+import frc.robot.commands.ForceCalibrate;
+import frc.robot.commands.OrbitReef;
 import frc.robot.commands.AlignToReef;
 import frc.robot.commands.AlignToReef;
 import frc.robot.subsystems.Drivetrain;
@@ -31,8 +33,10 @@ public class OI {
         PSButton.onTrue(new InstantCommand(() -> Drivetrain.getInstance().resetGyro()));    
         
         Trigger SquareButton = new JoystickButton(controller, PS4Controller.Button.kSquare.value);
-        SquareButton.whileTrue(new AlignToReef(false));
+        SquareButton.whileTrue(new OrbitReef());
 
+        Trigger TriangleButton = new JoystickButton(controller, PS4Controller.Button.kTriangle.value);
+        TriangleButton.onTrue(new InstantCommand(() -> Drivetrain.getInstance().forceCalibrate(true)));
         // Trigger xButton = new JoystickButton(controller, PS4Controller.Button.kCross.value);
         // xButton.toggleOnTrue(new AlignToReef(true));
     }

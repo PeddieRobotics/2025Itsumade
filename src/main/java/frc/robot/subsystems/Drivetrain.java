@@ -24,8 +24,7 @@ import frc.robot.util.RobotMap;
 
 public class Drivetrain extends SubsystemBase {
     private static Drivetrain instance;
-
-    private final Field2d odometryPose, mt1BotposePose, mt2BotposePose;
+    private static LimelightPVShooter limelightPVShooter;
     
     private final SwerveModule[] swerveModules;
     private final SwerveModule frontLeft, frontRight, backLeft, backRight;
@@ -40,6 +39,8 @@ public class Drivetrain extends SubsystemBase {
 
     private SwerveDrivePoseEstimator odometry;
 
+    private final Field2d fusedOdometryPose;
+
     // private LimelightShooter limelightShooter;
 
     private boolean isForcingCalibration;
@@ -52,13 +53,8 @@ public class Drivetrain extends SubsystemBase {
     }
     
     public Drivetrain() {
-        odometryPose = new Field2d();
-        mt1BotposePose = new Field2d();
-        mt2BotposePose = new Field2d();
-
-        SmartDashboard.putData("odometry pose", odometryPose);
-        SmartDashboard.putData("megatag1 pose", mt1BotposePose);
-        SmartDashboard.putData("megatag2 pose", mt2BotposePose);
+        fusedOdometryPose = new Field2d();
+        SmartDashboard.putData("fused odometry", fusedOdometryPose);
 
         SmartDashboard.putBoolean("isForcingCalibration", isForcingCalibration);
         SmartDashboard.putBoolean("useMegaTag", useMegaTag);
@@ -90,8 +86,9 @@ public class Drivetrain extends SubsystemBase {
 
         // limelightShooter = LimelightShooter.getInstance();
 
-        isForcingCalibration = false;
+        isForcingCalibration = true;
         
+        limelightPVShooter = LimelightPVShooter.getInstance();
     }
     
     public void resetGyro() {
@@ -139,8 +136,32 @@ public class Drivetrain extends SubsystemBase {
             swerveModules[i].setDesiredState(desiredStates[i]);
     }
 
+    public void forceCalibrate(boolean force) {
+        isForcingCalibration = force;
+    }
+
     public void updateOdometry(){
         odometry.update(getHeadingAsRotation2d(), positions);
+        int numAprilTag = limelightPVShooter.getNumberOfTagsSeen();
+
+        if (isForcingCalibration) {
+            limelightPVShooter.checkForAprilTagUpdates(odometry);
+            
+            // odometry.setVisionMeasurementStdDevs(VecBuilder.fill(
+            //     0.01, 0.01, 70
+            // ));
+    
+            // // odometry set devs
+            // double latency = limelightPVShooter.getTotalLatencyInMS();
+            // double timestampLatencyComp = Timer.getFPGATimestamp() - latency / 1000.0;
+    
+            // Pose2d estimatedPose = limelightPVShooter.getEstimatedPose();
+    
+            // odometry.addVisionMeasurement(estimatedPose, timestampLatencyComp);
+            
+            // isForcingCalibration = false;
+        }
+        
 
         //  if(DriverStation.isAutonomous()){
         //     if (isForcingCalibration) {
@@ -185,11 +206,20 @@ public class Drivetrain extends SubsystemBase {
         return pipelineNumber;
     }
     
+    public double calcReefOffset(){
+        double currentHeading = getHeading();
+        double poseX = getPose().getX();
+        double poseY = getPose().getY();
+    
+        // return Math.atan((FieldConstants.reefY - poseY) / (FieldConstants.reefX - poseX));
+        return 0;
+    }
+
     @Override
     public void periodic() {
 
-        SmartDashboard.getBoolean("isForcingCalibration", isForcingCalibration);
-        SmartDashboard.getBoolean("useMegaTag", useMegaTag);
+        // SmartDashboard.getBoolean("isForcingCalibration", isForcingCalibration);
+        // SmartDashboard.getBoolean("useMegaTag", useMegaTag);
 
         double pov = OI.getInstance().getDPadPOV();
         if (pov == 90)
@@ -219,6 +249,8 @@ public class Drivetrain extends SubsystemBase {
 
         updateModulePositions();
         updateOdometry();
+
+        fusedOdometryPose.setRobotPose(odometry.getEstimatedPosition());
 
         // mt1BotposePose.setRobotPose(limelightShooter.getMT1BotPose());
         //
