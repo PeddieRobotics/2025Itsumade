@@ -30,7 +30,7 @@ public class OrbitReef extends Command {
         SmartDashboard.putNumber("FF turn pid orbitReef", 0);
 
 
-        turnPIDController = new PIDController(SmartDashboard.getNumber("P turn pid orbitReef", 0), 
+        turnPIDController = new PIDController(SmartDashboard.getNumber("P turn pid orbitReef", 0.5), 
                             SmartDashboard.getNumber("I turn pid orbitReef", 0), 
                             SmartDashboard.getNumber("D turn pid orbitReef", 0));
 
@@ -39,11 +39,13 @@ public class OrbitReef extends Command {
         turnFF = SmartDashboard.getNumber("FF turn pid orbitReef", 0);
 
         SmartDashboard.putNumber("robot heading", drivetrain.getHeading());
+        addRequirements(drivetrain);
 
     }
 
     @Override
     public void initialize() {
+        oi = OI.getInstance();
         turnPIDController.setP(SmartDashboard.getNumber("P turn pid orbitReef", 0)); 
         turnPIDController.setI(SmartDashboard.getNumber("I turn pid orbitReef", 0));
         turnPIDController.setD(SmartDashboard.getNumber("D turn pid orbitReef", 0));
@@ -55,9 +57,10 @@ public class OrbitReef extends Command {
     public void execute() {
         currentHeading = drivetrain.getHeading();
 
-        setpoint = SmartDashboard.getNumber("CalcReefOffset", drivetrain.calcReefOffset()*(Math.PI/180) - currentHeading);
+        setpoint = drivetrain.calcReefOffset()*(Math.PI/180); // - currentHeading
 
         double turnToReef = turnPIDController.calculate(currentHeading, setpoint);
+        //turnToReef + turnFF * Math.signum(turnToReef)
         drivetrain.drive(oi.getSwerveTranslation(), turnToReef + turnFF * Math.signum(turnToReef), true, new Translation2d(0, 0));
 
     }

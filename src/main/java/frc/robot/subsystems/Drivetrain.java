@@ -18,6 +18,7 @@ import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.util.Constants.DriveConstants;
+import frc.robot.util.Constants.DriveConstants.AutoAlign;
 import frc.robot.util.LimelightHelpers;
 import frc.robot.util.OI;
 import frc.robot.util.RobotMap;
@@ -211,8 +212,7 @@ public class Drivetrain extends SubsystemBase {
         double poseX = getPose().getX();
         double poseY = getPose().getY();
     
-        // return Math.atan((FieldConstants.reefY - poseY) / (FieldConstants.reefX - poseX));
-        return 0;
+        return Math.atan((AutoAlign.reefCenterY - poseY) / (AutoAlign.reefCenterX - poseX));
     }
 
     @Override
@@ -220,6 +220,9 @@ public class Drivetrain extends SubsystemBase {
 
         // SmartDashboard.getBoolean("isForcingCalibration", isForcingCalibration);
         // SmartDashboard.getBoolean("useMegaTag", useMegaTag);
+        SmartDashboard.putNumber("CalcReefOffset", calcReefOffset()*(Math.PI/180) - getHeading());
+        SmartDashboard.putNumber("OFFSET REEF", calcReefOffset());
+
 
         double pov = OI.getInstance().getDPadPOV();
         if (pov == 90)

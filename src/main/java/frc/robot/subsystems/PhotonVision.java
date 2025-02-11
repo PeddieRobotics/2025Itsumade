@@ -245,7 +245,7 @@ public abstract class PhotonVision extends SubsystemBase {
         // if (tagsSeen > 1 && this.getBotpose().relativeTo(odometry.getEstimatedPosition()).getTranslation().getNorm() < 0.5) {
         //     odometry.addVisionMeasurement(this.getBotpose(), Timer.getFPGATimestamp());
         // }
-        if (tagsSeen > 1) {
+        if (tagsSeen >= 1) {
             // Get pipeline and capture latency (in milliseconds)
             double latency = getTotalLatencyInMS();
             // double cl = LimelightHelpers.getLatency_Capture(name);

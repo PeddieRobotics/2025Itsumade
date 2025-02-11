@@ -64,6 +64,8 @@ public class Constants {
             // public static final double kI = 0.0;
             // public static final double kD = 0.0;
             // public static final double kFF = 0.0;
+            public static final double reefCenterX = 4.5;
+            public static final double reefCenterY = 4.0;
         }
         
         public static final double kTrackWidth = Units.inchesToMeters(25.75);
