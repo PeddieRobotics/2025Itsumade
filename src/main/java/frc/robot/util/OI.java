@@ -10,6 +10,7 @@ import frc.robot.commands.ForceCalibrate;
 import frc.robot.commands.OrbitReef;
 import frc.robot.commands.AlignToReef;
 import frc.robot.commands.AlignToReef;
+import frc.robot.commands.AlignToReefEstimatedPose;
 import frc.robot.subsystems.Drivetrain;
 import frc.robot.util.Constants.DriveConstants;
 
@@ -39,6 +40,9 @@ public class OI {
         TriangleButton.onTrue(new InstantCommand(() -> Drivetrain.getInstance().forceCalibrate(true)));
         // Trigger xButton = new JoystickButton(controller, PS4Controller.Button.kCross.value);
         // xButton.toggleOnTrue(new AlignToReef(true));
+		
+        Trigger xButton = new JoystickButton(controller, PS4Controller.Button.kCross.value);
+        xButton.whileTrue(new AlignToReefEstimatedPose());
     }
     
     public double getForward() {

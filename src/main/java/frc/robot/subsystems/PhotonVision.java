@@ -15,7 +15,6 @@ import edu.wpi.first.apriltag.AprilTagFields;
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.filter.LinearFilter;
 import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation3d;
@@ -40,6 +39,7 @@ public abstract class PhotonVision extends SubsystemBase {
 
     protected PhotonVision(String cameraName, double cameraForwardOffset,
                         double cameraLeftOffset, double cameraHeightOffset) {
+
         camera = new PhotonCamera(cameraName);
         Transform3d robotToCam = new Transform3d(new Translation3d(
             cameraForwardOffset, cameraLeftOffset, cameraHeightOffset
@@ -112,6 +112,10 @@ public abstract class PhotonVision extends SubsystemBase {
     public Pose2d getEstimatedPose() {
         return estimatedPose;
     }
+    
+    public Transform3d getBestCameraToTarget() {
+        return hasTarget() ? bestTarget.getBestCameraToTarget() : new Transform3d();
+    }
 
     // =======================================================
     //                 T-Something Raw Getters
@@ -177,6 +181,20 @@ public abstract class PhotonVision extends SubsystemBase {
 
     public boolean hasTarget() {
         return result.hasTargets();
+    }
+
+    public Pose2d getAprilTagPose(int number) {
+        var aprilTagPose = aprilTagFieldLayout.getTagPose(number);
+        if (!aprilTagPose.isPresent())
+            return new Pose2d();
+        return aprilTagPose.get().toPose2d();
+    }
+    
+    public Pose2d getAprilTagPose() {
+        var aprilTagPose = aprilTagFieldLayout.getTagPose(getTargetID());
+        if (!aprilTagPose.isPresent())
+            return new Pose2d();
+        return aprilTagPose.get().toPose2d();
     }
 
     // ====================================================
