@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.util.Units;
 
@@ -92,7 +93,7 @@ public class Constants {
         
         public static final double kMaxFloorSpeed = 3;
     }
-    
+
     // 0 is facing away from driver stations
     // index is april tag #, assuming clockwise
     public static final Map<Integer, Double> kReefDesiredAngle = new HashMap<>() {{
@@ -111,5 +112,16 @@ public class Constants {
         put(20, 120.0);
         put(21, 180.0);
         put(22, -120.0);
+    }};
+    
+    public static final InterpolatingDoubleTreeMap k1TagStdDevs = new InterpolatingDoubleTreeMap() {{
+        put(1.0, 0.1);
+        put(1.12, 0.5);
+        put(1.33, 1.25);
+        put(1.55, 1.6);
+        put(1.8, 1.9);
+        put(2.02, 2.7);
+        put(2.21, 4.9);
+        put(2.38, 7.0);
     }};
 }

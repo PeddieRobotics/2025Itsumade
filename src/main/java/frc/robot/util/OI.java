@@ -2,15 +2,15 @@ package frc.robot.util;
 
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.PS4Controller;
+import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.StartEndCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.commands.AlignToReef;
-import frc.robot.commands.ForceCalibrate;
 import frc.robot.commands.OrbitReef;
-import frc.robot.commands.AlignToReef;
-import frc.robot.commands.AlignToReef;
 import frc.robot.commands.AlignToReefEstimatedPose;
+import frc.robot.commands.ForceCalibrate;
 import frc.robot.subsystems.Drivetrain;
 import frc.robot.util.Constants.DriveConstants;
 
@@ -37,9 +37,7 @@ public class OI {
         SquareButton.whileTrue(new OrbitReef());
 
         Trigger TriangleButton = new JoystickButton(controller, PS4Controller.Button.kTriangle.value);
-        TriangleButton.onTrue(new InstantCommand(() -> Drivetrain.getInstance().forceCalibrate(true)));
-        // Trigger xButton = new JoystickButton(controller, PS4Controller.Button.kCross.value);
-        // xButton.toggleOnTrue(new AlignToReef(true));
+        TriangleButton.onTrue(new InstantCommand(() -> Drivetrain.getInstance().setForcingCalibration(true)));
 		
         Trigger xButton = new JoystickButton(controller, PS4Controller.Button.kCross.value);
         xButton.whileTrue(new AlignToReefEstimatedPose());

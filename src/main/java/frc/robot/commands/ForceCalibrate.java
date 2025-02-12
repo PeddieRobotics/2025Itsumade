@@ -1,38 +1,16 @@
-// Copyright (c) FIRST and other WPILib contributors.
-// Open Source Software; you can modify and/or share it under the terms of
-// the WPILib BSD license file in the root directory of this project.
-
 package frc.robot.commands;
 
-import frc.robot.subsystems.Drivetrain;
-import frc.robot.subsystems.SwerveModule;
 import edu.wpi.first.wpilibj2.command.Command;
+import frc.robot.subsystems.Drivetrain;
 
-/** An example command that uses an example subsystem. */
 public class ForceCalibrate extends Command {
-  Drivetrain drivetrain;
-
-  public ForceCalibrate() {
-    drivetrain = Drivetrain.getInstance();
-  }
-
-  // Called when the command is initially scheduled.
-  @Override
-  public void initialize() {
-    drivetrain.forceCalibrate(true);
-  }
-
-  // Called every time the scheduler runs while the command is scheduled.
-  @Override
-  public void execute() {}
-
-  // Called once the command ends or is interrupted.
-  @Override
-  public void end(boolean interrupted) {}
-
-  // Returns true when the command should end.
-  @Override
-  public boolean isFinished() {
-    return true;
-  }
+    public ForceCalibrate() { }
+    public void initialize() {
+        Drivetrain.getInstance().setForcingCalibration(true);
+    }
+    public void execute() { }
+    public void end() {
+        Drivetrain.getInstance().setForcingCalibration(false);
+    }
+    public boolean isFinished() { return false; }
 }

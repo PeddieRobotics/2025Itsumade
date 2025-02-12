@@ -1,5 +1,7 @@
 package frc.robot.subsystems;
 
+import java.lang.constant.Constable;
+
 import com.ctre.phoenix6.hardware.Pigeon2;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
@@ -10,10 +12,13 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.util.Constants.DriveConstants;
 import frc.robot.util.Constants.DriveConstants.AutoAlign;
+import frc.robot.util.Constants;
 import frc.robot.util.LimelightHelpers;
 import frc.robot.util.OI;
 import frc.robot.util.RobotMap;
@@ -52,8 +57,8 @@ public class Drivetrain extends SubsystemBase {
         fusedOdometryPose = new Field2d();
         SmartDashboard.putData("fused odometry", fusedOdometryPose);
 
-        SmartDashboard.putBoolean("isForcingCalibration", isForcingCalibration);
-        SmartDashboard.putBoolean("useMegaTag", useMegaTag);
+        SmartDashboard.putNumber("Standard Deviation", 1);
+
         frontLeft = new SwerveModule(RobotMap.CANIVORE_NAME, RobotMap.FRONT_LEFT_MODULE_DRIVE_ID,
                     RobotMap.FRONT_LEFT_MODULE_TURN_ID, RobotMap.FRONT_LEFT_MODULE_CANCODER_ID, DriveConstants.kFrontLeftCancoderOffset);
         frontRight = new SwerveModule(RobotMap.CANIVORE_NAME, RobotMap.FRONT_RIGHT_MODULE_DRIVE_ID,
@@ -82,7 +87,7 @@ public class Drivetrain extends SubsystemBase {
 
         // limelightShooter = LimelightShooter.getInstance();
 
-        isForcingCalibration = true;
+        isForcingCalibration = false;
         
         limelightPVShooter = LimelightPVShooter.getInstance();
     }
@@ -115,11 +120,11 @@ public class Drivetrain extends SubsystemBase {
     
     public ChassisSpeeds getRobotRelativeSpeeds(){
         return DriveConstants.kinematics.toChassisSpeeds(
-                                                          frontLeft.getState(), 
-                                                          frontRight.getState(), 
-                                                          backLeft.getState(), 
-                                                          backRight.getState()
-                                                        );
+            frontLeft.getState(), 
+            frontRight.getState(), 
+            backLeft.getState(), 
+            backRight.getState()
+        );
     }
 
     public void driveRobotRelative(ChassisSpeeds robotRelativeSpeeds){
@@ -132,31 +137,72 @@ public class Drivetrain extends SubsystemBase {
             swerveModules[i].setDesiredState(desiredStates[i]);
     }
 
-    public void forceCalibrate(boolean force) {
+    public void setForcingCalibration(boolean force) {
         isForcingCalibration = force;
     }
 
     public void updateOdometry(){
         odometry.update(getHeadingAsRotation2d(), positions);
-        int numAprilTag = limelightPVShooter.getNumberOfTagsSeen();
 
+        int numTagsSeen = limelightPVShooter.getNumberOfTagsSeen();
+        if (numTagsSeen < 1)
+            return;
+
+        // TODO: add sanity check/safeguards
+
+        Pose2d estimatedPose = limelightPVShooter.getEstimatedPose();
         if (isForcingCalibration) {
-            limelightPVShooter.checkForAprilTagUpdates(odometry);
-            
-            // odometry.setVisionMeasurementStdDevs(VecBuilder.fill(
-            //     0.01, 0.01, 70
-            // ));
-    
-            // // odometry set devs
-            // double latency = limelightPVShooter.getTotalLatencyInMS();
-            // double timestampLatencyComp = Timer.getFPGATimestamp() - latency / 1000.0;
-    
-            // Pose2d estimatedPose = limelightPVShooter.getEstimatedPose();
-    
-            // odometry.addVisionMeasurement(estimatedPose, timestampLatencyComp);
-            
-            // isForcingCalibration = false;
+            odometry.resetTranslation(estimatedPose.getTranslation());
+            isForcingCalibration = false;
+            return;
         }
+
+        double latency = limelightPVShooter.getTotalLatencyInMS();
+        double timestampLatencyComp = Timer.getFPGATimestamp() - latency / 1000.0;
+
+        // double deviation = SmartDashboard.getNumber("Standard Deviation", 1);
+        double distance = limelightPVShooter.getDistanceEstimatedPose();
+        double deviation = 100;
+        
+        if (numTagsSeen == 1)
+            deviation = Constants.k1TagStdDevs.get(distance);
+        // TODO
+        else
+            deviation = Constants.k1TagStdDevs.get(distance) * 0.8;
+
+        odometry.setVisionMeasurementStdDevs(VecBuilder.fill(
+            deviation, deviation, 100000
+        ));
+        odometry.addVisionMeasurement(estimatedPose, timestampLatencyComp);
+
+    //     if (isForcingCalibration) {
+    //         //IMPORTANT:still has safe guard preventing the use of update vision if it is outside a half meter range, delete or change 
+    //         //condition to furhter enable checkforapriltag updates 
+    //         
+    //         // if (tagsSeen > 1 && this.getBotpose().relativeTo(odometry.getEstimatedPosition()).getTranslation().getNorm() < 0.5) {
+    //         //     odometry.addVisionMeasurement(this.getBotpose(), Timer.getFPGATimestamp());
+    //         // }
+    //
+    //         odometry.setVisionMeasurementStdDevs(VecBuilder.fill(
+    //             0.01, 0.01, 1
+    //         ));
+    //
+    //         odometry.addVisionMeasurement(estimatedPose, timestampLatencyComp);
+    //         
+    //         // odometry.setVisionMeasurementStdDevs(VecBuilder.fill(
+    //         //     0.01, 0.01, 70
+    //         // ));
+    // 
+    //         // // odometry set devs
+    //         // double latency = limelightPVShooter.getTotalLatencyInMS();
+    //         // double timestampLatencyComp = Timer.getFPGATimestamp() - latency / 1000.0;
+    // 
+    //         // Pose2d estimatedPose = limelightPVShooter.getEstimatedPose();
+    // 
+    //         // odometry.addVisionMeasurement(estimatedPose, timestampLatencyComp);
+    //         
+    //         // isForcingCalibration = false;
+    //     }
         
 
         //  if(DriverStation.isAutonomous()){
@@ -201,22 +247,12 @@ public class Drivetrain extends SubsystemBase {
     public int getPipelineNumber() {
         return pipelineNumber;
     }
-    
-    public double calcReefOffset(){
-        double currentHeading = getHeading();
-        double poseX = getPose().getX();
-        double poseY = getPose().getY();
-    
-        return Math.atan((AutoAlign.reefCenterY - poseY) / (AutoAlign.reefCenterX - poseX));
-    }
 
     @Override
     public void periodic() {
 
         // SmartDashboard.getBoolean("isForcingCalibration", isForcingCalibration);
         // SmartDashboard.getBoolean("useMegaTag", useMegaTag);
-        SmartDashboard.putNumber("CalcReefOffset", calcReefOffset()*(Math.PI/180) - getHeading());
-        SmartDashboard.putNumber("OFFSET REEF", calcReefOffset());
 
 
         double pov = OI.getInstance().getDPadPOV();

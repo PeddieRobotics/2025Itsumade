@@ -6,6 +6,7 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.subsystems.Drivetrain;
+import frc.robot.util.Constants.DriveConstants.AutoAlign;
 import frc.robot.util.OI;
 
 public class OrbitReef extends Command {
@@ -13,32 +14,27 @@ public class OrbitReef extends Command {
     private Drivetrain drivetrain;
     private OI oi;
 
+    private double P = 0.12, I = 0, D = 0, FF = 0;
+
     private double turnThreshold, turnFF;
     private PIDController turnPIDController;
-    //private Logger logger;
     private double currentHeading, initialHeading;
 
     private double setpoint;
 
     public OrbitReef() { //center of the reef is (4.5, 4)!!!
         drivetrain = Drivetrain.getInstance();
-        //logger = Logger.getInstance();
         
         SmartDashboard.putNumber("P turn pid orbitReef", 0);
         SmartDashboard.putNumber("I turn pid orbitReef", 0);
         SmartDashboard.putNumber("D turn pid orbitReef", 0);
         SmartDashboard.putNumber("FF turn pid orbitReef", 0);
 
-
-        turnPIDController = new PIDController(SmartDashboard.getNumber("P turn pid orbitReef", 0.5), 
-                            SmartDashboard.getNumber("I turn pid orbitReef", 0), 
-                            SmartDashboard.getNumber("D turn pid orbitReef", 0));
-
+        turnPIDController = new PIDController(0, 0, 0);
         turnPIDController.enableContinuousInput(-180, 180); //wrap around values 
 
         turnFF = SmartDashboard.getNumber("FF turn pid orbitReef", 0);
 
-        SmartDashboard.putNumber("robot heading", drivetrain.getHeading());
         addRequirements(drivetrain);
 
     }
@@ -46,18 +42,26 @@ public class OrbitReef extends Command {
     @Override
     public void initialize() {
         oi = OI.getInstance();
-        turnPIDController.setP(SmartDashboard.getNumber("P turn pid orbitReef", 0)); 
-        turnPIDController.setI(SmartDashboard.getNumber("I turn pid orbitReef", 0));
-        turnPIDController.setD(SmartDashboard.getNumber("D turn pid orbitReef", 0));
-
-
     }
 
     @Override
     public void execute() {
+        turnPIDController.setP(SmartDashboard.getNumber("P turn pid orbitReef", 0)); 
+        turnPIDController.setI(SmartDashboard.getNumber("I turn pid orbitReef", 0));
+        turnPIDController.setD(SmartDashboard.getNumber("D turn pid orbitReef", 0));
+        turnFF = SmartDashboard.getNumber("FF turn pid orbitReef", turnFF);
+        
         currentHeading = drivetrain.getHeading();
 
-        setpoint = drivetrain.calcReefOffset()*(Math.PI/180); // - currentHeading
+        double currentHeading = drivetrain.getHeading();
+        double poseX = drivetrain.getPose().getX();
+        double poseY = drivetrain.getPose().getY();
+        // setpoint = Math.atan((AutoAlign.reefCenterY - poseY) / (AutoAlign.reefCenterX - poseX));
+        setpoint = Math.atan2(AutoAlign.reefCenterY - poseY, AutoAlign.reefCenterX - poseX);
+        setpoint = Math.toDegrees(setpoint);
+
+        SmartDashboard.putNumber("orbit reef error", drivetrain.getHeading() - setpoint);
+        SmartDashboard.putNumber("orbit reef setpoint", setpoint);
 
         double turnToReef = turnPIDController.calculate(currentHeading, setpoint);
         //turnToReef + turnFF * Math.signum(turnToReef)
