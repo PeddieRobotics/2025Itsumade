@@ -110,4 +110,5 @@ public class Constants {
         put(21, 180.0);
         put(22, -120.0);
     }};
+    public static double kCageDesiredAngle;
 }
