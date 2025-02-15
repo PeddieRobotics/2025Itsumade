@@ -6,7 +6,7 @@ public class LimelightPVShooter extends PhotonVision {
     private static LimelightPVShooter limelightShooter;
 
     private LimelightPVShooter() {
-        super("front-left-cam", 0.37873696, 0, 0.3892028);
+        super("front-left-cam", 0.37873696, 0, 0.3892028, 0, 0);
         
     }
 
@@ -19,7 +19,7 @@ public class LimelightPVShooter extends PhotonVision {
     @Override
     public void periodic() {
         super.periodic();
-    
+
         SmartDashboard.putNumber("PV Tx", getTx());
         SmartDashboard.putNumber("PV Ty", getTy());
         SmartDashboard.putNumber("PV Average Tx", getTxAverage());

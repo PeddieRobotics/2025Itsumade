@@ -2,46 +2,75 @@ package frc.robot.subsystems;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
+import org.photonvision.EstimatedRobotPose;
 import org.photonvision.PhotonCamera;
 import org.photonvision.PhotonPoseEstimator;
 import org.photonvision.PhotonPoseEstimator.PoseStrategy;
 import org.photonvision.PhotonUtils;
+import org.photonvision.common.hardware.VisionLEDMode;
+import org.photonvision.targeting.MultiTargetPNPResult;
 import org.photonvision.targeting.PhotonPipelineResult;
 import org.photonvision.targeting.PhotonTrackedTarget;
 
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
+import edu.wpi.first.math.VecBuilder;
+import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.filter.LinearFilter;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation3d;
+import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.networktables.StructPublisher;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.util.Constants;
 import frc.robot.util.RollingAverage;
 
 public abstract class PhotonVision extends SubsystemBase {
+    private static AprilTagFieldLayout aprilTagFieldLayout;
+
     private PhotonCamera camera;
     private PhotonPoseEstimator ppe;
-    private Field2d field;
     private PhotonPipelineResult result;
     private List<PhotonTrackedTarget> targets;
     private PhotonTrackedTarget bestTarget;
     private RollingAverage txAverage, tyAverage;
     private LinearFilter distTyFilter, distEstimatedPoseFilter;
-    private AprilTagFieldLayout aprilTagFieldLayout;
-    private Pose2d estimatedPose;
+    private Pose3d estimatedPose;
+    private double reprojectionError;
+    
+    private String cameraName; 
+    
+    private double cameraForwardOffset, cameraLeftOffset, cameraUpOffset;
+    private double cameraPitchRadians, cameraYawRadians;
+    
+    private Field2d field;
+    private StructPublisher<Pose2d> publisher;
 
+    // TODO: check if directions are right (specifically if cameraPitchRadians positive means up or down)
     protected PhotonVision(String cameraName, double cameraForwardOffset,
-                        double cameraLeftOffset, double cameraHeightOffset) {
+                        double cameraLeftOffset, double cameraUpOffset,
+                        double cameraPitchDegrees, double cameraYawDegrees) {
+        
+        this.cameraName = cameraName;
+        this.cameraForwardOffset = cameraForwardOffset;
+        this.cameraLeftOffset = cameraLeftOffset;
+        this.cameraUpOffset = cameraUpOffset;
+        this.cameraPitchRadians = Math.toRadians(cameraPitchDegrees);
+        this.cameraYawRadians = Math.toRadians(cameraYawDegrees);
 
         camera = new PhotonCamera(cameraName);
         Transform3d robotToCam = new Transform3d(new Translation3d(
-            cameraForwardOffset, cameraLeftOffset, cameraHeightOffset
+            cameraForwardOffset, cameraLeftOffset, cameraUpOffset
         ), new Rotation3d(
-            0, 0, 0
+            0, cameraPitchRadians, cameraYawRadians
         ));
 
         aprilTagFieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.kDefaultField);
@@ -50,25 +79,29 @@ public abstract class PhotonVision extends SubsystemBase {
             PoseStrategy.MULTI_TAG_PNP_ON_COPROCESSOR,
             robotToCam
         );
-        
-        estimatedPose = new Pose2d();
+        // TODO: maybe try this out??
+        // ppe.setMultiTagFallbackStrategy(PoseStrategy.XXX);
 
-        field = new Field2d();
+        estimatedPose = new Pose3d();
+        reprojectionError = Integer.MAX_VALUE;
+
         result = new PhotonPipelineResult();
-
-        SmartDashboard.putData("PhotonVision estimated pose", field);
 
         txAverage = new RollingAverage();
         tyAverage = new RollingAverage();
 
         distTyFilter = LinearFilter.singlePoleIIR(0.24, 0.02);
         distEstimatedPoseFilter = LinearFilter.singlePoleIIR(0.24, 0.02);
-    }
 
+        field = new Field2d();
+        SmartDashboard.putData(cameraName + " estimated pose", field);
+
+        publisher = NetworkTableInstance.getDefault().getStructTopic(cameraName + " estimated pose for advantagescope", Pose2d.struct).publish();
+    }
+    
     @Override 
     public void periodic() {
         List<PhotonPipelineResult> pipelineResults = camera.getAllUnreadResults();
-        SmartDashboard.putNumber("pipelineResultLength", pipelineResults.size());
 
         if (pipelineResults.isEmpty())
             return;
@@ -76,15 +109,28 @@ public abstract class PhotonVision extends SubsystemBase {
         result = pipelineResults.get(0);
         if (!result.hasTargets())
             return;
-
+        
         targets = result.getTargets();
         // sort the list by area / get largest area
-        Collections.sort(targets, (o1, o2) -> (int) (o2.getArea() - o1.getArea()));
+        Collections.sort(targets, (o1, o2) -> (
+            ((Double) o2.getArea()).compareTo(o1.getArea())
+        ));
         bestTarget = targets.get(0);
-        updateRollingAverages();
 
+        updateRollingAverages();
         getEstimatedPoseInternal();
-        field.setRobotPose(estimatedPose);
+
+        field.setRobotPose(estimatedPose.toPose2d());
+        publisher.set(estimatedPose.toPose2d());
+
+        Optional<MultiTargetPNPResult> thing = result.getMultiTagResult();
+        SmartDashboard.putBoolean(cameraName + " has reproj error?", thing.isPresent());
+        if (thing.isPresent())
+            reprojectionError = thing.get().estimatedPose.bestReprojErr;
+
+        SmartDashboard.putNumber(cameraName + " distance estimated pose", getDistanceEstimatedPose());
+        SmartDashboard.putNumber(cameraName + " reprojection error", reprojectionError);
+        SmartDashboard.putNumber(cameraName + " number of targets", getNumberOfTagsSeen());
     }
 
     // ========================================================
@@ -94,24 +140,62 @@ public abstract class PhotonVision extends SubsystemBase {
     // PLEASE PLEASE do not call this function yourself
     // the PhotonPoseEstimator only occasionally has updates
     // the public getEstimatedPose returns the latest update
-    private void getEstimatedPoseInternal(){
+    private void getEstimatedPoseInternal() {
         if (!hasTarget())
             return;
 
-        var update = ppe.update(result);
-        if (!update.isPresent())
-            return;
-        
-        estimatedPose = update.get().estimatedPose.toPose2d();
+        Optional<EstimatedRobotPose> update = ppe.update(result);
+        if (update.isPresent())
+            estimatedPose = update.get().estimatedPose;
     }
     
     // you should use this for estimated pose
     public Pose2d getEstimatedPose() {
-        return estimatedPose;
+        return estimatedPose.toPose2d();
     }
     
-    public Transform3d getBestCameraToTarget() {
-        return hasTarget() ? bestTarget.getBestCameraToTarget() : new Transform3d();
+    public double getReprojectionError() {
+        return reprojectionError;
+    }
+    
+    public void fuseEstimatedPose(SwerveDrivePoseEstimator odometry) {
+        if (!hasTarget())
+            return;
+        if (Math.abs(estimatedPose.getZ()) > 0.4)
+            return;
+
+        int numTagsSeen = getNumberOfTagsSeen();
+        double distance = getDistanceEstimatedPose();
+
+        if (numTagsSeen == 1 && distance > 1.3)
+            return; 
+        
+        // this may not even be necessary
+        if (numTagsSeen >= 2 && distance > 3.3)
+            return;    
+            
+        Pose2d odoCurrent = odometry.getEstimatedPosition();
+        Pose2d estimatedPose2d = estimatedPose.toPose2d();
+
+        double distX = estimatedPose2d.getX() - odoCurrent.getX();
+        double distY = estimatedPose2d.getY() - odoCurrent.getY();
+        if (Math.sqrt((distX * distX) + (distY * distY)) > 3)
+            return;
+
+        double deviation;
+        if (numTagsSeen == 1)
+            deviation = Constants.AutoAlign.k1TagStdDevs.get(distance);
+        else
+            deviation = Constants.AutoAlign.k2TagStdDevs.get(distance);
+        
+        odometry.setVisionMeasurementStdDevs(VecBuilder.fill(
+            deviation, deviation, 30
+        ));
+
+        double latency = getTotalLatencyInMS();
+        double timestampLatencyComp = Timer.getFPGATimestamp() - latency / 1000.0;
+        odometry.addVisionMeasurement(estimatedPose2d, timestampLatencyComp);
+
     }
 
     // =======================================================
@@ -150,10 +234,19 @@ public abstract class PhotonVision extends SubsystemBase {
 
     // distance to CAMERA LENS
     public double getDistanceTy() {
-        // TODO: set constants 
-        return hasTarget() ? PhotonUtils.calculateDistanceToTargetMeters(
-            0.3892028, 1.4859, 0, Math.toRadians(getTy())
-        ) : 0;
+        // TODO: is the logic correct?
+        if (hasTarget())
+            return 0;
+
+        int tagNum = getTargetID();
+        Optional<Pose3d> tagPose = aprilTagFieldLayout.getTagPose(tagNum);
+        if (!tagPose.isPresent())
+            return 0;
+        
+        double tagHeight = tagPose.get().getZ();
+        return PhotonUtils.calculateDistanceToTargetMeters(
+            cameraUpOffset, tagHeight, cameraPitchRadians, Math.toRadians(getTy())
+        );
     }
 
     public double getFilteredDistanceTy(){
@@ -180,15 +273,8 @@ public abstract class PhotonVision extends SubsystemBase {
         return result.hasTargets();
     }
 
-    public Pose2d getAprilTagPose(int number) {
-        var aprilTagPose = aprilTagFieldLayout.getTagPose(number);
-        if (!aprilTagPose.isPresent())
-            return new Pose2d();
-        return aprilTagPose.get().toPose2d();
-    }
-    
-    public Pose2d getAprilTagPose() {
-        var aprilTagPose = aprilTagFieldLayout.getTagPose(getTargetID());
+    public static Pose2d getAprilTagPose(int tag) {
+        var aprilTagPose = aprilTagFieldLayout.getTagPose(tag);
         if (!aprilTagPose.isPresent())
             return new Pose2d();
         return aprilTagPose.get().toPose2d();
@@ -250,4 +336,13 @@ public abstract class PhotonVision extends SubsystemBase {
     public double getTotalLatencyInMS(){
         return result.metadata.getLatencyMillis();
     }
+    
+    public String getName() {
+        return cameraName;
+    }
+    
+    public void setBlinking(boolean blinking) {
+        camera.setLED(blinking ? VisionLEDMode.kBlink : VisionLEDMode.kOff);
+    }
 }
+

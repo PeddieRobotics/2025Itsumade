@@ -11,7 +11,6 @@ import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import frc.robot.commands.AlignToReef;
 import frc.robot.commands.TimerStart;
 
 public class Autonomous extends SubsystemBase {
@@ -82,7 +81,6 @@ public class Autonomous extends SubsystemBase {
     }
 
     public void registerNamedCommands(){
-        NamedCommands.registerCommand("ALIGN_TO_REEF", new AlignToReef(true));
         NamedCommands.registerCommand("SET_TIMER", new TimerStart("Forward start"));
     }
 }

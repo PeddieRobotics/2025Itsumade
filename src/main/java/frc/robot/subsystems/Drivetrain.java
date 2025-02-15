@@ -10,6 +10,7 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.util.Constants.DriveConstants;
@@ -37,6 +38,9 @@ public class Drivetrain extends SubsystemBase {
 
     private boolean isForcingCalibration;
     private boolean useMegaTag = true;
+    
+    private final Field2d fusedOdometry;
+    private Translation2d currentMovement;
 
     public static Drivetrain getInstance() {
         if (instance == null)
@@ -63,6 +67,9 @@ public class Drivetrain extends SubsystemBase {
             frontLeft.getPosition(), frontRight.getPosition(),
             backLeft.getPosition(), backRight.getPosition()
         };
+
+        currentMovement = new Translation2d();
+
         // set states to the values calculated for 0 movement
         states = DriveConstants.kinematics.toSwerveModuleStates(new ChassisSpeeds(0, 0, 0));
         
@@ -77,6 +84,8 @@ public class Drivetrain extends SubsystemBase {
 
         isForcingCalibration = false;
         
+        fusedOdometry = new Field2d();
+        SmartDashboard.putData("Fused odometry", fusedOdometry);
     }
     
     public void resetGyro() {
@@ -107,11 +116,11 @@ public class Drivetrain extends SubsystemBase {
     
     public ChassisSpeeds getRobotRelativeSpeeds(){
         return DriveConstants.kinematics.toChassisSpeeds(
-                                                          frontLeft.getState(), 
-                                                          frontRight.getState(), 
-                                                          backLeft.getState(), 
-                                                          backRight.getState()
-                                                        );
+            frontLeft.getState(), 
+            frontRight.getState(), 
+            backLeft.getState(), 
+            backRight.getState()
+        );
     }
 
     public void driveRobotRelative(ChassisSpeeds robotRelativeSpeeds){
@@ -124,8 +133,15 @@ public class Drivetrain extends SubsystemBase {
             swerveModules[i].setDesiredState(desiredStates[i]);
     }
 
+    public void resetTranslation(Translation2d translation) {
+        odometry.resetTranslation(translation);
+    }
+    public Translation2d getCurrentMovement() {
+        return currentMovement;
+    }
     public void updateOdometry(){
         odometry.update(getHeadingAsRotation2d(), positions);
+        LimelightPVShooter.getInstance().fuseEstimatedPose(odometry);
 
         //  if(DriverStation.isAutonomous()){
         //     if (isForcingCalibration) {
@@ -143,6 +159,9 @@ public class Drivetrain extends SubsystemBase {
     // in radians/s
     public void drive(Translation2d translation, double rotation,
             boolean fieldOriented, Translation2d centerOfRotation) {
+
+        if (fieldOriented)
+            currentMovement = translation;
 
         ChassisSpeeds fieldRelativeSpeeds = new ChassisSpeeds(translation.getX(), translation.getY(), rotation);
         
@@ -204,6 +223,7 @@ public class Drivetrain extends SubsystemBase {
 
         updateModulePositions();
         updateOdometry();
+        fusedOdometry.setRobotPose(odometry.getEstimatedPosition());
 
         // mt1BotposePose.setRobotPose(limelightShooter.getMT1BotPose());
         //
