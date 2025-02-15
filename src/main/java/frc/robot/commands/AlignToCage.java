@@ -59,13 +59,13 @@ public class AlignToCage extends Command {
     desiredAngle = 0;
     desiredTranslation = 0.07;
     
-    translationP = 1.75;
+    translationP = 0.25;
     translationI = 0;
     translationD = 0;
     translationFF = 0.001;
     translationPidController = new PIDController(translationP, translationI , translationD);
 
-    rotationP = 0.05;
+    rotationP = 0.1;
     rotationI = 0.0;
     rotationD = 0.0;
     rotationFF = 0.0;
@@ -104,6 +104,7 @@ public class AlignToCage extends Command {
   @Override
   public void execute() {
     shooterCam.setPipeline(drivetrain.getPipelineNumber());
+    double distanceFromCage = shooterCam.getFilteredDistanceTy();
 
     //TODO: getHeading is in clockwise positive, should be counterclockwise on 2025j
     rotationError = desiredAngle + drivetrain.getHeading();
@@ -132,7 +133,7 @@ public class AlignToCage extends Command {
       if (Math.abs(translationError) > translationThreshold)
         horizontalTranslation = translationPidController.calculate(translationError) + Math.signum(translationError) * translationFF;
 
-      translation = new Translation2d(-forBackTranslation, horizontalTranslation);
+      translation = new Translation2d(forBackTranslation, horizontalTranslation/5);
 
       logger.cmdTranslationEntry.append(translationError);
     }
@@ -166,6 +167,7 @@ public class AlignToCage extends Command {
     // translation = new Translation2d(translateX_sgn * desaturatedX, translateY_sgn * desaturatedY);
 
     drivetrain.drive(translation, rotation, false, null);
+
   }
 
   // Called once the command ends or is interrupted.
@@ -190,6 +192,7 @@ public class AlignToCage extends Command {
       SmartDashboard.putBoolean("ended by time", true);
       return true;
     }
+
     SmartDashboard.putBoolean("ended by time", false);
     //FYI rotationerror will never be >1000, just hacky so it doesn't care about rotation error
     return Math.abs(txValue) < 1 && Math.abs(rotationError) < 1000 && Math.abs(distanceError) < 1 && elapsed >= 0.1;
