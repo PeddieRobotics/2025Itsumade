@@ -1,80 +1,307 @@
 package frc.robot.subsystems;
 
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Optional;
+
+import edu.wpi.first.apriltag.AprilTagFieldLayout;
+import edu.wpi.first.apriltag.AprilTagFields;
+import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.filter.LinearFilter;
 import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.math.geometry.Pose3d;
+import edu.wpi.first.math.geometry.Rotation3d;
+import edu.wpi.first.math.util.Units;
+import edu.wpi.first.networktables.DoubleArrayPublisher;
+import edu.wpi.first.networktables.DoubleArraySubscriber;
+import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.networktables.StructPublisher;
+import edu.wpi.first.wpilibj.smartdashboard.Field2d;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.util.Constants;
 import frc.robot.util.LimelightHelpers;
+import frc.robot.util.LimelightHelpers.PoseEstimate;
 import frc.robot.util.RollingAverage;
 
 public abstract class Limelight extends SubsystemBase {
-    private String name;
-    private RollingAverage txAverage, tyAverage, taAverage, rotationAverage, rxAverage, ryAverage;
+    /**
+     * Algorithm from https://docs.limelightvision.io/en/latest/cs_estimating_distance.html Estimates
+     * range to a target using the target's elevation. This method can produce more stable results
+     * than SolvePNP when well tuned, if the full 6d robot pose is not required. Note that this method
+     * requires the camera to have 0 roll (not be skewed clockwise or CCW relative to the floor), and
+     * for there to exist a height differential between goal and camera. The larger this differential,
+     * the more accurate the distance estimate will be.
+     *
+     * <p>Units can be converted using the {@link edu.wpi.first.math.util.Units} class.
+     *
+     * @param cameraHeightMeters The physical height of the camera off the floor in meters.
+     * @param targetHeightMeters The physical height of the target off the floor in meters. This
+     *     should be the height of whatever is being targeted (i.e. if the targeting region is set to
+     *     top, this should be the height of the top of the target).
+     * @param cameraPitchRadians The pitch of the camera from the horizontal plane in radians.
+     *     Positive values up.
+     * @param targetPitchRadians The pitch of the target in the camera's lens in radians. Positive
+     *     values up.
+     * @return The estimated distance to the target in meters.
+     */
+    public static double calculateDistanceToTargetMeters(
+            double cameraHeightMeters,
+            double targetHeightMeters,
+            double cameraPitchRadians,
+            double targetPitchRadians) {
+        return (targetHeightMeters - cameraHeightMeters)
+                / Math.tan(cameraPitchRadians + targetPitchRadians);
+    }
 
-    private LinearFilter distFilter;
-    private double lastDistance;
+    private static AprilTagFieldLayout aprilTagFieldLayout;
 
-    private double redTargetOffset, blueTargetOffset;
+    private RollingAverage txAverage, tyAverage;
+    private LinearFilter distTyFilter, distEstimatedPoseFilter;
+    
+    private String limelightName; 
+    
+    private double cameraUpOffset;
+    private double cameraPitchRadians;
+    private boolean isInverted;
+        
+    private Field2d fieldMT1, fieldMT2;
+    private StructPublisher<Pose2d> publisherMT1, publisherMT2;
 
-    private Pose2d calculatedBotpose;
-
-    // protected -- allow descendants to use but not others
-    protected Limelight(String name, int pipeline) {
-        this.name = name;
-        setPipeline(pipeline);
+    protected Limelight(String limelightName, double cameraUpOffset, double cameraPitchDegrees, boolean isInverted) {
+        aprilTagFieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.kDefaultField);
+        
+        this.limelightName = limelightName;
+        this.cameraUpOffset = cameraUpOffset;
+        this.cameraPitchRadians = Math.toRadians(cameraPitchDegrees);
+        this.isInverted = isInverted;
 
         txAverage = new RollingAverage();
         tyAverage = new RollingAverage();
-        taAverage = new RollingAverage();
-        rotationAverage = new RollingAverage();
-        rxAverage = new RollingAverage(); 
-        ryAverage = new RollingAverage(); 
 
-        distFilter = LinearFilter.singlePoleIIR(0.24, 0.02);
-        lastDistance = 0;
+        distTyFilter = LinearFilter.singlePoleIIR(0.24, 0.02);
+        distEstimatedPoseFilter = LinearFilter.singlePoleIIR(0.24, 0.02);
+
+        fieldMT1 = new Field2d();
+        fieldMT2 = new Field2d();
+        SmartDashboard.putData(limelightName + " estimated pose (MT1)", fieldMT1);
+        SmartDashboard.putData(limelightName + " estimated pose (MT2)", fieldMT2);
+
+        publisherMT1 = NetworkTableInstance.getDefault().getStructTopic(
+            limelightName + " estimated pose for advantagescope (MT1)", Pose2d.struct
+        ).publish();
+        publisherMT2 = NetworkTableInstance.getDefault().getStructTopic(
+            limelightName + " estimated pose for advantagescope (MT2)", Pose2d.struct
+        ).publish();
     }
 
-    // ==================================================
-    //                 T-Something Getters
-    // ==================================================
+    public void setPriorityTag(int tagNum) {
+        LimelightHelpers.setPriorityTagID(limelightName, tagNum);
+    }
     
-    // Tv is whether the limelight has a valid target
-    public boolean getTv() {
-        return LimelightHelpers.getTV(name);
+    @Override 
+    public void periodic() {
+        updateRollingAverages();
+        LimelightHelpers.SetRobotOrientation(limelightName, Drivetrain.getInstance().getHeading(), 0, 0, 0, 0, 0);
+
+        Optional<Pose2d> estimatedPoseMT1 = getEstimatedPoseMT1();
+        if (estimatedPoseMT1.isPresent()) {
+            fieldMT1.setRobotPose(estimatedPoseMT1.get());
+            publisherMT1.set(estimatedPoseMT1.get());
+        }
+
+        Optional<Pose2d> estimatedPoseMT2 = getEstimatedPoseMT2();
+        if (estimatedPoseMT2.isPresent()) {
+            fieldMT2.setRobotPose(estimatedPoseMT2.get());
+            publisherMT2.set(estimatedPoseMT2.get());
+        }
+
+        SmartDashboard.putNumber(limelightName + " Tx", getTx());
+        SmartDashboard.putNumber(limelightName + " Ty", getTy());
+        SmartDashboard.putNumber(limelightName + " distance (estimated pose)", getDistanceEstimatedPose());
+        SmartDashboard.putNumber(limelightName + " distance (Ty)", getDistanceTy());
+        SmartDashboard.putNumber(limelightName + " filtered distance (estimated pose)", getFilteredDistanceEstimatedPose());
+        SmartDashboard.putNumber(limelightName + " filtered distance (Ty)", getFilteredDistanceTy());
+        SmartDashboard.putNumber(limelightName + " number of tags seen", getNumberOfTagsSeen());
+        SmartDashboard.putNumber(limelightName + " target ID", getTargetID());
+        SmartDashboard.putBoolean(limelightName + " has target", hasTarget());
+
+        SmartDashboard.putNumber(limelightName + " current priority", LimelightHelpers.getLimelightNTDouble(limelightName, "priorityid"));
     }
 
-    // Tx is the Horizontal Offset From Crosshair To Target
+
+    // ========================================================
+    //                 Pose/Translation Getters
+    // ========================================================
+        
+    private Optional<PoseEstimate> getPoseEstimateMT1() {
+        PoseEstimate poseEstimate = LimelightHelpers.getBotPoseEstimate_wpiBlue(limelightName);
+        return poseEstimate == null ? Optional.empty() : Optional.of(poseEstimate);
+    }
+
+    public Optional<Pose2d> getEstimatedPoseMT1() {
+        PoseEstimate poseEstimate = LimelightHelpers.getBotPoseEstimate_wpiBlue(limelightName);
+        return poseEstimate == null ? Optional.empty() : Optional.of(poseEstimate.pose);
+    }
+
+    public Optional<Pose2d> getEstimatedPoseMT2() {
+        PoseEstimate poseEstimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(limelightName);
+        return poseEstimate == null ? Optional.empty() : Optional.of(poseEstimate.pose);
+    }
+    
+    public void fuseEstimatedPose(SwerveDrivePoseEstimator odometry) {
+        if (!hasTarget())
+            return;
+        
+        Optional<PoseEstimate> estimatedPoseEstimate = getPoseEstimateMT1();
+        if (!estimatedPoseEstimate.isPresent())
+            return;
+        Pose2d estimatedPose = estimatedPoseEstimate.get().pose;
+        // if (Math.abs(estimatedPose.getZ()) > 0.4)
+        //     return;
+
+        int numTagsSeen = getNumberOfTagsSeen();
+        double distance = getDistanceEstimatedPose();
+
+        if (numTagsSeen == 1 && distance > 1.3)
+            return; 
+        
+        // this may not even be necessary
+        if (numTagsSeen >= 2 && distance > 3.3)
+            return;    
+            
+        Pose2d odoCurrent = odometry.getEstimatedPosition();
+
+        double distX = estimatedPose.getX() - odoCurrent.getX();
+        double distY = estimatedPose.getY() - odoCurrent.getY();
+        if (Math.sqrt((distX * distX) + (distY * distY)) > 3)
+            return;
+
+        double deviation;
+        if (numTagsSeen == 1)
+            deviation = Constants.AutoAlign.k1TagStdDevs.get(distance);
+        else
+            deviation = Constants.AutoAlign.k2TagStdDevs.get(distance);
+        
+        odometry.setVisionMeasurementStdDevs(VecBuilder.fill(
+            deviation, deviation, 30
+        ));
+
+        odometry.addVisionMeasurement(estimatedPose, estimatedPoseEstimate.get().timestampSeconds);
+    }
+
+    // =======================================================
+    //                 T-Something Raw Getters
+    // =======================================================
+    
+    // so, uh, Limelight doesn't invert the Tx and Ty automatically on upside down Limelights
     public double getTx() {
-        double value = LimelightHelpers.getTX(name);
-        return value;
+        return (isInverted ? -1 : 1) * LimelightHelpers.getTX(limelightName);
     }
 
-    // Ty is the Vertical Offset From Crosshair To Target
     public double getTy() {
-        double value = LimelightHelpers.getTY(name);
-        return value;
+        return (isInverted ? -1 : 1) * LimelightHelpers.getTY(limelightName);
     }
 
-    // TODO: what the hell does this do???
-    // public double getTx_NoCrosshair() {
-    //     return LimelightHelpers.getTX_NoCrosshair(name);
-    // }
-    //
-    // public double getTy_NoCrosshair() {
-    //     return LimelightHelpers.getTY_NoCrosshair(name);
-    // }
+    // ================================================
+    //                 Distance Getters
+    // ================================================
 
-    public double getTa() {
-        return LimelightHelpers.getTA(name);
+    // distance to CENTER OF ROBOT
+    public double getDistanceEstimatedPose() {
+        if (!hasTarget())
+            return 0;
+
+        var aprilTagPose = aprilTagFieldLayout.getTagPose(getTargetID());
+        if (!aprilTagPose.isPresent())
+            return 0;
+
+        Pose2d tag = aprilTagPose.get().toPose2d();
+
+        Optional<PoseEstimate> estimatedPoseEstimate = getPoseEstimateMT1();
+        if (!estimatedPoseEstimate.isPresent())
+            return 0;
+        Pose2d robotPose = estimatedPoseEstimate.get().pose;
+
+        double dx = tag.getX() - robotPose.getX();
+        double dy = tag.getY() - robotPose.getY();
+        
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    // distance to CAMERA LENS
+    public double getDistanceTy() {
+        // TODO: is the logic correct?
+        if (!hasTarget())
+            return 0;
+
+        int tagNum = getTargetID();
+        Optional<Pose3d> tagPose = aprilTagFieldLayout.getTagPose(tagNum);
+        if (!tagPose.isPresent())
+            return 0;
+        
+        double tagHeight = tagPose.get().getZ();
+        return calculateDistanceToTargetMeters(
+            cameraUpOffset, tagHeight, cameraPitchRadians, Math.toRadians(getTy())
+        );
+    }
+
+    public double getFilteredDistanceEstimatedPose(){
+        return distEstimatedPoseFilter.lastValue();
+    }
+
+    public double getFilteredDistanceTy(){
+        return distTyFilter.lastValue();
+    }
+
+    // ======================================================
+    //                 Other AprilTag Getters
+    // ======================================================
+    
+    // TODO: test
+    public int getNumberOfTagsSeen() {
+        return LimelightHelpers.getTargetCount(limelightName);
+    }
+
+    public int getTargetID() {
+        return (int) LimelightHelpers.getFiducialID(limelightName);
+    }
+
+    public boolean hasTarget() {
+        return LimelightHelpers.getTV(limelightName);
+    }
+
+    public static Pose2d getAprilTagPose(int tag) {
+        var aprilTagPose = aprilTagFieldLayout.getTagPose(tag);
+        if (!aprilTagPose.isPresent())
+            return new Pose2d();
+        return aprilTagPose.get().toPose2d();
+    }
+
+    public Pose2d getAprilTagPose() {
+        var aprilTagPose = aprilTagFieldLayout.getTagPose(getTargetID());
+        if (!aprilTagPose.isPresent())
+            return new Pose2d();
+        return aprilTagPose.get().toPose2d();
+    }
+
+    // ====================================================
+    //                 Pipeline Controllers
+    // ====================================================
+
+    public int getPipeline() {
+        return (int) LimelightHelpers.getCurrentPipelineIndex(limelightName);
+    }
+
+    public void setPipeline(int pipelineIndex) {
+        LimelightHelpers.setPipelineIndex(limelightName, pipelineIndex);
     }
 
     // ===============================================
     //                 Average Getters
     // ===============================================
-
+    
     public double getTxAverage() {
         return txAverage.getAverage();
     }
@@ -83,224 +310,46 @@ public abstract class Limelight extends SubsystemBase {
         return tyAverage.getAverage();
     }
 
-    public double getTaAverage() {
-        return taAverage.getAverage();
-    }
-
-    public double getRotationAverage() {
-        return rotationAverage.getAverage();
-    }
-
-    public double getRXAverage(){
-        return rxAverage.getAverage(); 
-    }
-
-    public double getRYAverage(){
-        return ryAverage.getAverage(); 
-    }
-    
-    // ================================================
-    //                 Distance Getters
-    // ================================================
-
-    // TODO: implement
-    public double getDistance() {
-        if (!hasTarget()) {
-            return 0;
-        } else {
-            // a1 = LL panning angle
-            // a2 = additional angle to target
-            // tan(a1 + a2) = h/d
-            // d = h/tan(a1+a2)
-            // return (LimelightConstants.kSpeakerAprilTagHeight - LimelightConstants.kLimelightHeight) /
-            //         (Math.tan(Math.toRadians(LimelightConstants.kLimelightPanningAngle + getTy())));
-            return (30.5 - 17.88) /
-                    (Math.tan(Math.toRadians(25.0 - getTy())));
-            // return 0;
-        }
-    }
-
-    public double getLastDistance(){
-        return lastDistance;
-    }
-
-    public double getDistanceForLogging() {
-        if (hasTarget())
-            return getDistance();
-        return getLastDistance();
-    }
-
-    public double getFilteredDistance(){
-        return distFilter.lastValue();
-    }
-
-    // ================================================
-    //                 Apriltag Getters
-    // ================================================
-    
-    // Class ID of primary neural detector result or neural classifier result
-    public String getNeuralClassID() {
-        return LimelightHelpers.getNeuralClassID(name);
-    }
-
-    public int getNumberOfTagsSeen() {
-        double[] botposeArr = LimelightHelpers.getBotPose_wpiBlue(name);
-        return botposeArr.length == 0 ? 0 : (int) botposeArr[7];
-    }
-
-    public boolean hasTarget() {
-        return getTv();
-    }
-
-    public double getTargetID() {
-        return LimelightHelpers.getFiducialID(name);
-    }
-
-    // ============================================
-    //                 Other Getters
-    // ============================================
-
-    public void setRedTargetingOffset(double offset){
-        redTargetOffset = offset;
-    }
-
-    public void setBlueTargetingOffset(double offset){
-        blueTargetOffset = offset;
-    }
-
-    public double getRedTargetingOffset(){
-        return redTargetOffset;
-    }
-
-    public double getBlueTargetingOffset(){
-        return blueTargetOffset;
-    }
-    
-    // ===============================================================
-    //                 Rolling Average Control Methods
-    // ===============================================================
+    // ===========================================================
+    //                 Rolling Average Controllers
+    // ===========================================================
     
     public void updateRollingAverages() {
-        if (hasTarget()) {
-            txAverage.add(getTx());
-            tyAverage.add(getTy());
-            taAverage.add(getTa());
+        if (!hasTarget())
+            return;
 
-            double dist = getDistance();
-            if (dist != 0)
-                distFilter.calculate(dist);
-            
-            // rotationAverage.add(getBotpose().getRotation().getDegrees());//based on alliance of driverstation, awaiting testing 
-            rotationAverage.add(getMT1BotPose().getRotation().getDegrees()); 
+        txAverage.add(getTx());
+        tyAverage.add(getTy());
 
-            //red
-            rxAverage.add(getMT1BotPose().getX()); 
-            ryAverage.add(getMT1BotPose().getY()); 
-        }
+        double distTy = getDistanceTy();
+        if (distTy != 0)
+            distTyFilter.calculate(distTy);
+
+        double distEstimatedPose = getDistanceEstimatedPose();
+        if (distEstimatedPose != 0)
+            distEstimatedPoseFilter.calculate(distEstimatedPose);
     }
 
     public void resetRollingAverages(){
         txAverage.clear();
         tyAverage.clear();
-        taAverage.clear();
-        rotationAverage.clear(); 
-        rxAverage.clear(); 
-        ryAverage.clear(); 
-    }
-
-    // =======================================
-    //                 Botpose
-    // =======================================
-
-    public Pose2d getMT1BotPose() {
-        double[] result;
-        try {
-            // Use blue coordinates by default for all odometry
-            result = LimelightHelpers.getBotPose_wpiBlue(name);
-            // if(DriverStation.getAlliance().get() == Alliance.Red){
-            //     result = LimelightHelpers.getBotPose_wpiRed(name);
-            // }
-            // else{
-            //     result = LimelightHelpers.getBotPose_wpiBlue(name);
-            // }
-        } catch (java.util.NoSuchElementException e) {
-            return new Pose2d();
-        }
-
-        if (result.length > 0) {
-            return new Pose2d(
-                new Translation2d(result[0], result[1]), 
-                new Rotation2d(Math.toRadians(result[5]))
-            );
-        }
-
-        return new Pose2d();
-    }
-    
-    public Pose2d getMT2BotPose() {
-        double gyro = Drivetrain.getInstance().getHeading();
-        LimelightHelpers.SetRobotOrientation(name, gyro, 0, 0, 0, 0, 0);
-
-        LimelightHelpers.PoseEstimate mt2 = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(name);
-        // gyro rate
-        return mt2.pose != null ? mt2.pose : new Pose2d();
-    }
-
-    // public void checkForAprilTagUpdates(SwerveDrivePoseEstimator odometry) {
-    //     int tagsSeen = getNumberOfTagsSeen();
-    //     //IMPORTANT:still has safe guard preventing the use of update vision if it is outside a half meter range, delete or change 
-    //     //condition to furhter enable checkforapriltag updates 
-    //     
-    //     // if (tagsSeen > 1 && this.getBotpose().relativeTo(odometry.getEstimatedPosition()).getTranslation().getNorm() < 0.5) {
-    //     //     odometry.addVisionMeasurement(this.getBotpose(), Timer.getFPGATimestamp());
-    //     // }
-    //
-    //     if (tagsSeen > 1) {
-    //         // Get pipeline and capture latency (in milliseconds)
-    //         double tl = LimelightHelpers.getLatency_Pipeline(name);
-    //         double cl = LimelightHelpers.getLatency_Capture(name);
-    //
-    //         // Calculate a latency-compensated timestamp for the vision measurement (in seconds)
-    //         double timestampLatencyComp = Timer.getFPGATimestamp() - (tl/1000.0) - (cl/1000.0);
-    //         calculatedBotpose = this.getMT1BotPose();
-    //         odometry.addVisionMeasurement(calculatedBotpose, timestampLatencyComp);
-    //     }
-    //     else
-    //         calculatedBotpose = null;
-    // }
-    
-    // getBotpose returns botpose regardless
-    // getCalculatedBotpose only returns values that are used,
-    // i.e. those found when >=2 limelights used
-    public Pose2d getCalculatedBotpose() {
-        return calculatedBotpose;
-    }
-    
-    // Gets the total latency of the limelight capture + pipeline processing for the current image, in milliseconds (MS)
-    public double getTotalLatencyInMS(){
-        double tl = LimelightHelpers.getLatency_Pipeline(name);
-        double cl = LimelightHelpers.getLatency_Capture(name);
-        return tl + cl;
     }
 
     // ======================================
     //                 Others
-    // ======================================
+   // ======================================
+
+    public double getTotalLatencyInMS() {
+        return LimelightHelpers.getLatency_Capture(limelightName) + LimelightHelpers.getLatency_Pipeline(limelightName);
+    }
     
-    public void setPriorityTag(int tagID) {
-        LimelightHelpers.setPriorityTagID(name, tagID);
+    public String getName() {
+        return limelightName;
     }
-
-    public void setPipeline(int pipelineNum) {
-        LimelightHelpers.setPipelineIndex(name, pipelineNum);
-    }
-
-    public int getPipeline() {
-        return (int) LimelightHelpers.getCurrentPipelineIndex(name);
-    }
-
-    public String getJSONDump() {
-        return LimelightHelpers.getJSONDump(name);
+    
+    // TODO
+    public void setBlinking(boolean blinking) {
+        // LimelightHelpers.
+        // camera.setLED(blinking ? VisionLEDMode.kBlink : VisionLEDMode.kOff);
     }
 }
-

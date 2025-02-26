@@ -5,9 +5,6 @@ import edu.wpi.first.wpilibj.PS4Controller;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
-import frc.robot.commands.AlignToCage;
-import frc.robot.commands.AlignToReef;
-import frc.robot.commands.AlignToReefEstimatedPose;
 import frc.robot.subsystems.Drivetrain;
 import frc.robot.util.Constants.DriveConstants;
 
@@ -30,14 +27,14 @@ public class OI {
         Trigger PSButton = new JoystickButton(controller, PS4Controller.Button.kPS.value);
         PSButton.onTrue(new InstantCommand(() -> Drivetrain.getInstance().resetGyro()));    
         
-        Trigger SquareButton = new JoystickButton(controller, PS4Controller.Button.kSquare.value);
-        SquareButton.whileTrue(new AlignToReef(false));
+        // Trigger SquareButton = new JoystickButton(controller, PS4Controller.Button.kSquare.value);
+        // SquareButton.whileTrue(new AlignToReef(false));
 
         Trigger xButton = new JoystickButton(controller, PS4Controller.Button.kCross.value);
         // xButton.whileTrue(new AlignToReefEstimatedPose());
 
-        Trigger circleButton = new JoystickButton(controller, PS4Controller.Button.kCircle.value);
-        circleButton.whileTrue(new AlignToCage(false));
+        // Trigger circleButton = new JoystickButton(controller, PS4Controller.Button.kCircle.value);
+        // circleButton.whileTrue(new AlignToCage(false));
     }
     
     public double getForward() {

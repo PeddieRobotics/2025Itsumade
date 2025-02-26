@@ -9,8 +9,9 @@ import frc.robot.commands.Autos;
 import frc.robot.commands.SwerveDriveCommand;
 import frc.robot.subsystems.Autonomous;
 import frc.robot.subsystems.Drivetrain;
-import frc.robot.subsystems.LimelightPVShooter;
-import frc.robot.subsystems.PhotonVision;
+import frc.robot.subsystems.LimelightShooter;
+// import frc.robot.subsystems.LimelightPVShooter;
+// import frc.robot.subsystems.PhotonVision;
 // import frc.robot.subsystems.LimelightShooter;
 import frc.robot.subsystems.SwerveModule;
 import frc.robot.util.OI;
@@ -33,14 +34,14 @@ public class RobotContainer {
   // private LimelightShooter limelightShooter;
   private OI oi;
   private Autonomous autonomous;
-  private LimelightPVShooter LLPVShooter;
+  private LimelightShooter limelightShooter;
 
   public RobotContainer() {
     drivetrain = Drivetrain.getInstance();
     drivetrain.setDefaultCommand(new SwerveDriveCommand());
 
     oi = OI.getInstance();
-    LLPVShooter = LimelightPVShooter.getInstance();
+    limelightShooter = LimelightShooter.getInstance();
     // oi.configurate();
     
     // limelightShooter = LimelightShooter.getInstance();
