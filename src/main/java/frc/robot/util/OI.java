@@ -2,6 +2,7 @@ package frc.robot.util;
 
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.PS4Controller;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
@@ -9,6 +10,7 @@ import frc.robot.commands.AlignToCage;
 import frc.robot.commands.AlignToReef;
 import frc.robot.commands.AlignToReefEstimatedPose;
 import frc.robot.subsystems.Drivetrain;
+import frc.robot.subsystems.LimelightFrontMiddle;
 import frc.robot.util.Constants.DriveConstants;
 
 public class OI {
@@ -34,10 +36,23 @@ public class OI {
         SquareButton.whileTrue(new AlignToReef(false));
 
         Trigger xButton = new JoystickButton(controller, PS4Controller.Button.kCross.value);
-        // xButton.whileTrue(new AlignToReefEstimatedPose());
+        xButton.onTrue(new InstantCommand(() -> {
+            SmartDashboard.putBoolean(
+                "is inside bad hexagon",
+                CalculateReefTarget.insideBadHexagon(Drivetrain.getInstance().getPose())
+            );
+        }));
 
         Trigger circleButton = new JoystickButton(controller, PS4Controller.Button.kCircle.value);
         circleButton.whileTrue(new AlignToCage(false));
+
+        Trigger muteButton = new JoystickButton(controller, 15);
+        // Set to climb
+        muteButton.onTrue(new InstantCommand(() -> {
+            Drivetrain.getInstance().resetTranslation(LimelightFrontMiddle.getInstance().getEstimatedPoseMT2().get().getTranslation());
+        }));
+
+
     }
     
     public double getForward() {

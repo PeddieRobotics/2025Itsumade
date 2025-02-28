@@ -9,10 +9,13 @@ import frc.robot.commands.Autos;
 import frc.robot.commands.SwerveDriveCommand;
 import frc.robot.subsystems.Autonomous;
 import frc.robot.subsystems.Drivetrain;
+import frc.robot.subsystems.Limelight;
+import frc.robot.subsystems.LimelightFrontMiddle;
 import frc.robot.subsystems.LimelightPVShooter;
 import frc.robot.subsystems.PhotonVision;
 // import frc.robot.subsystems.LimelightShooter;
 import frc.robot.subsystems.SwerveModule;
+import frc.robot.util.CalculateReefTarget;
 import frc.robot.util.OI;
 
 import java.io.ObjectInputFilter.Config;
@@ -33,20 +36,22 @@ public class RobotContainer {
   // private LimelightShooter limelightShooter;
   private OI oi;
   private Autonomous autonomous;
-  private LimelightPVShooter LLPVShooter;
+  private Limelight LLPVShooter;
 
   public RobotContainer() {
     drivetrain = Drivetrain.getInstance();
     drivetrain.setDefaultCommand(new SwerveDriveCommand());
 
     oi = OI.getInstance();
-    LLPVShooter = LimelightPVShooter.getInstance();
+    LLPVShooter = LimelightFrontMiddle.getInstance();
     // oi.configurate();
     
     // limelightShooter = LimelightShooter.getInstance();
     autonomous = Autonomous.getInstance();  
 
     SmartDashboard.putData("Auto Routines", autonomous.getAutoChooser());
+
+    CalculateReefTarget.init();
   }
 
   public Command getAutonomousCommand() {

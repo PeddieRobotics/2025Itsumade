@@ -10,6 +10,7 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.util.Constants.DriveConstants;
@@ -38,12 +39,18 @@ public class Drivetrain extends SubsystemBase {
     private boolean isForcingCalibration;
     private boolean useMegaTag = true;
 
+    private Field2d fusedOdometry;
+
     public static Drivetrain getInstance() {
         if (instance == null)
             instance = new Drivetrain();
         return instance;
     }
     
+    public void resetTranslation(Translation2d translation) {
+        odometry.resetTranslation(translation);
+    }
+
     public Drivetrain() {
         SmartDashboard.putBoolean("isForcingCalibration", isForcingCalibration);
         SmartDashboard.putBoolean("useMegaTag", useMegaTag);
@@ -70,6 +77,10 @@ public class Drivetrain extends SubsystemBase {
         gyro.setYaw(0);
 
         odometry = new SwerveDrivePoseEstimator(DriveConstants.kinematics, getHeadingAsRotation2d(), positions, new Pose2d());
+
+        fusedOdometry = new Field2d();
+        SmartDashboard.putData("Fused odometry", fusedOdometry);
+
 
         pipelineNumber = 0;
 
@@ -204,6 +215,7 @@ public class Drivetrain extends SubsystemBase {
 
         updateModulePositions();
         updateOdometry();
+        fusedOdometry.setRobotPose(odometry.getEstimatedPosition());
 
         // mt1BotposePose.setRobotPose(limelightShooter.getMT1BotPose());
         //
