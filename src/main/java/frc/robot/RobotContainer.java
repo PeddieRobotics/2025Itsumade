@@ -7,7 +7,7 @@ package frc.robot;
 import frc.robot.commands.Autos;
 // import frc.robot.commands.AutoAlignment;
 import frc.robot.commands.SwerveDriveCommand;
-import frc.robot.subsystems.Autonomous;
+import frc.robot.Autonomous;
 import frc.robot.subsystems.Drivetrain;
 import frc.robot.subsystems.Limelight;
 import frc.robot.subsystems.LimelightFrontMiddle;
@@ -49,12 +49,6 @@ public class RobotContainer {
     // limelightShooter = LimelightShooter.getInstance();
     autonomous = Autonomous.getInstance();  
 
-    SmartDashboard.putData("Auto Routines", autonomous.getAutoChooser());
-
     CalculateReefTarget.init();
-  }
-
-  public Command getAutonomousCommand() {
-    return Autonomous.getAutonomousCommand();
   }
 }

@@ -8,11 +8,14 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.Autonomous;
 import frc.robot.util.Constants.DriveConstants;
 import frc.robot.util.LimelightHelpers;
 import frc.robot.util.OI;
@@ -74,7 +77,7 @@ public class Drivetrain extends SubsystemBase {
         states = DriveConstants.kinematics.toSwerveModuleStates(new ChassisSpeeds(0, 0, 0));
         
         gyro = new Pigeon2(RobotMap.GYRO_ID, RobotMap.CANIVORE_NAME);
-        gyro.setYaw(0);
+        // gyro.setYaw(0);
 
         odometry = new SwerveDrivePoseEstimator(DriveConstants.kinematics, getHeadingAsRotation2d(), positions, new Pose2d());
 
@@ -109,11 +112,6 @@ public class Drivetrain extends SubsystemBase {
     
     public Pose2d getPose(){
         return odometry.getEstimatedPosition();
-    }
-
-    public void resetPose(Pose2d pose){
-        gyro.reset();
-        odometry.resetPosition(getHeadingAsRotation2d(), positions, pose);
     }
     
     public ChassisSpeeds getRobotRelativeSpeeds(){
@@ -150,7 +148,33 @@ public class Drivetrain extends SubsystemBase {
         //     }
         // }
     }
+
+    public void setStartingPose(Translation2d pose) {
+        // degrees
+        double start = Autonomous.getInstance().getStartHeading();
+        
+        // want degrees
+        gyro.setYaw(start);
+
+        double x = pose.getX(), y = pose.getY();
+        if (DriverStation.getAlliance().isEmpty() || DriverStation.getAlliance().get() == DriverStation.Alliance.Red) {
+            x = 17.55 - x;
+            y = 8.05 - y;
+        }
+
+        // want radians
+        odometry.resetPosition(
+            new Rotation2d(Math.toRadians(start)),
+            positions,
+            new Pose2d(x, y, new Rotation2d(Math.toRadians(start)))
+        );
+    }
     
+    public double getHeadingBlue() {
+        if (DriverStation.getAlliance().isEmpty() || DriverStation.getAlliance().get() == DriverStation.Alliance.Blue)
+            return getHeading();
+        return Math.IEEEremainder(getHeading() + 180, 360);
+    }
     // in radians/s
     public void drive(Translation2d translation, double rotation,
             boolean fieldOriented, Translation2d centerOfRotation) {
@@ -170,6 +194,24 @@ public class Drivetrain extends SubsystemBase {
         SmartDashboard.putNumber("module 1 rotation deg", states[1].angle.getDegrees());
         SmartDashboard.putNumber("module 2 rotation deg", states[2].angle.getDegrees());
         SmartDashboard.putNumber("module 3 rotation deg", states[3].angle.getDegrees());
+
+        for (int i = 0; i < 4; i++)
+            states[i].optimize(new Rotation2d(swerveModules[i].getCANCoderRadians()));
+        
+        setSwerveModuleStates(states);
+    }
+
+    public void driveBlue(Translation2d translation, double rotation,
+            boolean fieldOriented, Translation2d centerOfRotation) {
+
+        ChassisSpeeds fieldRelativeSpeeds = new ChassisSpeeds(translation.getX(), translation.getY(), rotation);
+        
+        // not field oriented then joystick direction is robot direction
+        ChassisSpeeds robotRelativeSpeeds = fieldRelativeSpeeds;
+        if (fieldOriented)
+            robotRelativeSpeeds = ChassisSpeeds.fromFieldRelativeSpeeds(fieldRelativeSpeeds, new Rotation2d(Math.toRadians(getHeadingBlue())));
+                
+        states = DriveConstants.kinematics.toSwerveModuleStates(robotRelativeSpeeds);
 
         for (int i = 0; i < 4; i++)
             states[i].optimize(new Rotation2d(swerveModules[i].getCANCoderRadians()));

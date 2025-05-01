@@ -9,6 +9,7 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.commands.AlignToCage;
 import frc.robot.commands.AlignToReef;
 import frc.robot.commands.AlignToReefEstimatedPose;
+import frc.robot.commands.DriveToPoint;
 import frc.robot.subsystems.Drivetrain;
 import frc.robot.subsystems.LimelightFrontMiddle;
 import frc.robot.util.Constants.DriveConstants;
@@ -33,7 +34,8 @@ public class OI {
         PSButton.onTrue(new InstantCommand(() -> Drivetrain.getInstance().resetGyro()));    
         
         Trigger SquareButton = new JoystickButton(controller, PS4Controller.Button.kSquare.value);
-        SquareButton.whileTrue(new AlignToReef(false));
+        // SquareButton.whileTrue(new AlignToReef(false));
+        SquareButton.whileTrue(new DriveToPoint(4.0, 3.0, 0, 1.0));
 
         Trigger xButton = new JoystickButton(controller, PS4Controller.Button.kCross.value);
         xButton.onTrue(new InstantCommand(() -> {
