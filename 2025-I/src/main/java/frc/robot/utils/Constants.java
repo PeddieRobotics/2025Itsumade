@@ -42,7 +42,7 @@ public final class Constants {
 
     // TODO: Change this value
     public static final double kMaxFloorSpeed = 5.0; // meters per second
-    public static final double kMaxAngularSpeed = Math.PI; // radians per second
+    public static final double kMaxAngularSpeed = Math.PI * (2.0 / 3.0); // radians per second
 
     public static final double kWheelRadius = 2.0;
 
